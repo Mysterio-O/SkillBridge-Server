@@ -23,21 +23,14 @@ export const auth = betterAuth({
     ],
     user: {
         additionalFields: {
-            role: {
-                type: "string",
-                defaultValue: "USER",
-                required: false
-            },
-            phone: {
-                type: "string",
-                required: false
-            },
-            status: {
-                type: "string",
-                defaultValue: "ACTIVE",
-                required: false
-            }
-        }
+            role: { type: ["student", "tutor", "admin"], required: false, defaultValue: "student", input: false },
+            phone: { type: "string", required: false },
+            status: { type: ["active", "banned", "inactive"], required: false, defaultValue: "active", input: false },
+            bio: { type: "string", required: false },
+            lastLoginAt: { type: "date", required: false, input: false },
+            bannedAt: { type: "date", required: false, input: false },
+            banReason: { type: "string", required: false, input: false },
+        },
     },
     emailAndPassword: {
         enabled: true,
@@ -52,10 +45,10 @@ export const auth = betterAuth({
             const verificationUrl = `${process.env.APP_URL}/verify-email?token=${token}`
             try {
                 const info = await transporter.sendMail({
-                    from: '"Prisma Blog" <prisma@gmail.com>', // sender address
+                    from: '"Skill Bridge" <noreply@skill-bridge.com>', // sender address
                     to: user.email, // list of recipients
-                    subject: "Hello", // subject line
-                    text: "Hello world?", // plain text body
+                    subject: "Verify Your Skill Bridge Account", // subject line
+                    text: "Verification Email", // plain text body
                     html: `
                     <!DOCTYPE html>
 <html lang="en">
@@ -74,7 +67,7 @@ export const auth = betterAuth({
           <tr>
             <td style="background:#111827;padding:20px;text-align:center;">
               <h1 style="margin:0;color:#ffffff;font-size:20px;">
-                Prisma Blog
+                Skill Bridge
               </h1>
             </td>
           </tr>
@@ -128,7 +121,7 @@ export const auth = betterAuth({
               </p>
 
               <p style="font-size:13px;color:#6b7280;">
-                — Prisma Blog Team
+                — Skill Bridge Team
               </p>
             </td>
           </tr>
@@ -136,7 +129,7 @@ export const auth = betterAuth({
           <!-- Footer -->
           <tr>
             <td style="background:#f9fafb;padding:16px;text-align:center;font-size:12px;color:#9ca3af;">
-              © {${new Date().getFullYear()}} Prisma Blog. All rights reserved.
+              © {${new Date().getFullYear()}} Skill Bridge. All rights reserved.
             </td>
           </tr>
 
@@ -161,7 +154,7 @@ export const auth = betterAuth({
     socialProviders: {
         google: {
             prompt: 'select_account consent',
-            accessType:'offline',
+            accessType: 'offline',
             clientId: process.env.GOOGLE_CLIENT_ID as string,
             clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
         },
