@@ -1,0 +1,25 @@
+enum TutorSessionMode {
+  online
+  in_person
+  hybrid
+}
+
+enum MeetingPlatform {
+  zoom
+  google_meet
+  others
+}
+
+enum BookingStatus {
+  pending
+  confirmed
+  in_progress
+  completed
+  cancelled
+}
+
+enum CancelledBy {
+  student
+  tutor
+  admin
+}

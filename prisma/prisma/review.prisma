@@ -1,0 +1,22 @@
+model Review {
+  id String @id @default(cuid())
+
+  bookingId String @unique
+  studentId String
+  tutorId   String
+
+  rating       Int
+  comment      String?
+  isHidden     Boolean @default(false)
+  hiddenReason String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  student User    @relation("ReviewStudent", fields: [studentId], references: [id], onDelete: Restrict)
+  tutor   User    @relation("ReviewTutor", fields: [tutorId], references: [id], onDelete: Restrict)
+
+  @@index([tutorId])
+  @@map("reviews")
+}
