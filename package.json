@@ -23,6 +23,8 @@
   },
   "devDependencies": {
     "@better-auth/cli": "^1.4.17",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
     "@types/node": "^25.0.10",
     "@types/nodemailer": "^7.0.9",
     "dotenv": "^17.2.3",
