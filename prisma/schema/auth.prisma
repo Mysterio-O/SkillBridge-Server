@@ -4,11 +4,11 @@ model User {
   email         String
   emailVerified Boolean   @default(false)
   image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  role          String    @default("student")
+  createdAt     DateTime?  @default(now())
+  updatedAt     DateTime?  @updatedAt
+  role          String?    @default("student")
   phone         String?
-  status        String    @default("active")
+  status        String?    @default("active")
   bio           String?
   lastLoginAt   DateTime?
   bannedAt      DateTime?
