@@ -1,76 +1,82 @@
-
-
 import { config } from "../config/config";
 import { prisma } from "../lib/prisma";
 
-// const dotenvResult = dotenv.config();
-// console.log('dotenv load result:', dotenvResult);  // Should show { parsed: { ADMIN_NAME: 'admin4', ... } } or { error: ... }
-// console.log('Current working directory:', process.cwd());  // Should be C:\Level-2\first-prisma-project
-// console.log('.env exists?', fs.existsSync('.env'));  // Should be true
-// console.log('Raw .env content:', fs.readFileSync('.env', 'utf8'));
-
 async function seedAdmin() {
     try {
-        console.log('admin seeding started...');
+        console.log("admin seeding started...");
+
         const adminData = {
             name: config.seedAdminConfig.name as string,
             email: config.seedAdminConfig.email as string,
             role: config.seedAdminConfig.role,
             password: config.seedAdminConfig.password,
+        };
+
+        if (!adminData.email || !adminData.password || !adminData.name) {
+            throw new Error(
+                `Missing seed admin fields. Got: ${JSON.stringify(adminData)}`
+            );
         }
-        // console.log(adminData)
-        // check if the user exists already or not
-        console.log('verifying email..')
+
+        const dbInfo = (await prisma.$queryRaw<
+            { db: string; schema: string }[]
+        >`select current_database() as db, current_schema() as schema;`)[0];
+
+        console.log("Connected DB:", dbInfo);
+
+        console.log("verifying email..");
         const existingUser = await prisma.user.findUnique({
-            where: {
-                email: adminData.email
-            }
+            where: { email: adminData.email },
         });
 
         if (existingUser) {
-            throw new Error("User already exists")
-        };
-        console.log('creating admin..');
-
-        await new Promise<void>((resolve) => {
-            let count = 0;
-            const max = 45;
-            const interval = setInterval(() => {
-                process.stdout.write('=');
-                count++;
-                if (count >= max) {
-                    clearInterval(interval);
-                    process.stdout.write('\n'); // Move to next line after completion
-                    resolve();
-                }
-            }, 50); // Adjust delay (ms) for speed; lower = faster animation
-        });
-
-        const signUpAdmin = await fetch(config.seedAdminConfig.url as string, {
-            method: "POST",
-            headers: { "content-type": 'application/json' },
-            body: JSON.stringify(adminData)
-        });
-
-        // console.log(signUpAdmin)
-
-        if (signUpAdmin.ok) {
-            await prisma.user.update({
-                where: {
-                    email: adminData.email
-                },
-                data: {
-                    emailVerified: true
-                }
-            });
-
-            console.log('email verified')
+            console.log("User already exists in DB:", existingUser.email);
+            return;
         }
-        console.log('admin created')
-    }
-    catch (e) {
-        console.error(e);
-    }
-};
 
-seedAdmin()
+        console.log("calling sign-up endpoint..");
+        const res = await fetch("http://localhost:8080/api/auth/sign-up/email", {
+            method: "POST",
+            headers: {
+                "content-type": "application/json",
+                "origin": "http://localhost:3000",
+                "referer": "http://localhost:3000/",
+            },
+            body: JSON.stringify(adminData),
+        });
+
+        const bodyText = await res.text();
+        console.log("signup status:", res.status, res.statusText);
+        console.log("signup response:", bodyText);
+
+        if (!res.ok) {
+            throw new Error("Sign-up failed. User was NOT created.");
+        }
+
+        // Confirm user exists after signup
+        const created = await prisma.user.findUnique({
+            where: { email: adminData.email },
+        });
+
+        if (!created) {
+            throw new Error(
+                "Signup returned OK but user not found in DB. This usually means your API is using a DIFFERENT database."
+            );
+        }
+
+        // Mark verified
+        await prisma.user.update({
+            where: { email: adminData.email },
+            data: { emailVerified: true, role:config.seedAdminConfig.role },
+        });
+
+        console.log("email verified");
+        console.log("admin created:", adminData.email);
+    } catch (e) {
+        console.error("seedAdmin error:", e);
+    } finally {
+        await prisma.$disconnect();
+    }
+}
+
+seedAdmin();
