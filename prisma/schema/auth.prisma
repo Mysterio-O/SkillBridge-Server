@@ -4,23 +4,24 @@ model User {
   email         String
   emailVerified Boolean   @default(false)
   image         String?
-  createdAt     DateTime?  @default(now())
-  updatedAt     DateTime?  @updatedAt
-  role          String?    @default("student")
+  createdAt     DateTime? @default(now())
+  updatedAt     DateTime? @updatedAt
+  role          String?   @default("student")
   phone         String?
-  status        String?    @default("active")
+  status        String?   @default("active")
   bio           String?
   lastLoginAt   DateTime?
   bannedAt      DateTime?
   banReason     String?
 
-  sessions        Session[]
-  accounts        Account[]
-  tutorProfile    TutorProfile?
-  studentBookings Booking[]     @relation("BookingStudent")
-  tutorBookings   Booking[]     @relation("BookingTutor")
-  studentReviews  Review[]      @relation("ReviewStudent")
-  tutorReviews    Review[]      @relation("ReviewTutor")
+  sessions               Session[]
+  accounts               Account[]
+  tutorProfile           TutorProfile?
+  studentBookings        Booking[]      @relation("BookingStudent")
+  tutorBookings          Booking[]      @relation("BookingTutor")
+  studentReviews         Review[]       @relation("ReviewStudent")
+  tutorReviews           Review[]       @relation("ReviewTutor")
+  cancelledTutorProfiles TutorProfile[] @relation("TutorProfileCancelledBy")
 
   @@unique([email])
   @@map("user")

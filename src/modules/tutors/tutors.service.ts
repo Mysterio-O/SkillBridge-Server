@@ -1,4 +1,4 @@
-import { TutorProfile } from "../../../generated/prisma/client";
+import { CancelledBy, Prisma, TutorProfile, TutorProfileStatus, } from "../../../generated/prisma/client";
 import { prisma } from "../../lib/prisma";
 
 
@@ -13,6 +13,36 @@ const addTutor = async (payload: Omit<TutorProfile, 'id' | 'createdAt' | 'update
 };
 
 
+export const updateTutorApplication = async (
+  applicationId: string,
+  status: TutorProfileStatus,
+  adminId: string
+) => {
+  const application = await prisma.tutorProfile.findUniqueOrThrow({
+    where: { id: applicationId },
+    select: { id: true, userId: true, status: true },
+  });
+
+  // Prisma-safe typed update object
+  const data: Prisma.TutorProfileUpdateInput = { status:status };
+
+  // only set canceller when cancelled
+  if (status === "cancelled") {
+    data.cancelledBy = { connect: { id: adminId } }; 
+  } else {
+    data.cancelledBy = { disconnect: true };
+  }
+
+  const result = await prisma.tutorProfile.update({
+    where: { id: application.id },
+    data,
+  });
+
+  return result;
+};
+
+
 export const tutorService = {
-    addTutor
+    addTutor,
+    updateTutorApplication,
 }

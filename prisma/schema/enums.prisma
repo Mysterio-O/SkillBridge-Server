@@ -27,4 +27,5 @@ enum CancelledBy {
 enum TutorProfileStatus {
   pending
   active
+  cancelled
 }
