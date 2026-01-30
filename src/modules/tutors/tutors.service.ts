@@ -1,6 +1,5 @@
-import { CancelledBy, Prisma, TutorProfile, TutorProfileStatus, } from "../../../generated/prisma/client";
+import { Prisma, TutorProfile, TutorProfileStatus, } from "../../../generated/prisma/client";
 import { TutorProfileWhereInput } from "../../../generated/prisma/models";
-import { toInt, toNumber } from "../../helpers/helper";
 import { prisma } from "../../lib/prisma";
 
 
@@ -93,6 +92,13 @@ const getTutors = async (query: Query) => {
         skip: skip as number,
         where: {
             AND: andConditions
+        },
+        include: {
+            subjects: {
+                include: {
+                    category: true
+                }
+            }
         }
     });
 
@@ -105,8 +111,15 @@ const getTutors = async (query: Query) => {
 
 const getTutorById = async (id: string) => {
     const tutor = await prisma.tutorProfile.findUniqueOrThrow({
-        where:{
-            id:id
+        where: {
+            id: id
+        },
+        include: {
+            subjects: {
+                include: {
+                    category: true
+                }
+            }
         }
     })
 

@@ -7,6 +7,7 @@ import cors from 'cors'
 import errorHandler from './middleware/globalErrorHandler';
 import { notFound } from './middleware/notFound';
 import { tutorRouter } from './modules/tutors/tutors.route';
+import { categoriesRouter } from './modules/categories/categories.route';
 
 const app: Application = express();
 app.all('/api/auth/{*any}', toNodeHandler(auth));
@@ -28,6 +29,8 @@ app.get("/", async (req, res) => {
 
 
 app.use("/api/tutor",tutorRouter);
+
+app.use("/api/categories",categoriesRouter);
 
 
 app.use(errorHandler);

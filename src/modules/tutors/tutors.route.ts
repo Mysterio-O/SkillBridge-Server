@@ -4,9 +4,9 @@ import auth, { UserRole } from "../../middleware/auth";
 
 const router = express.Router();
 
-router.get("/", auth(UserRole.ADMIN, UserRole.STUDENT, UserRole.TUTOR), tutorController.getTutors);
+router.get("/", tutorController.getTutors);
 
-router.get("/:id", auth(UserRole.ADMIN, UserRole.STUDENT, UserRole.TUTOR), tutorController.getTutorById)
+router.get("/:id", tutorController.getTutorById)
 
 router.post("/", tutorController.addTutor);
 
