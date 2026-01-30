@@ -1,8 +1,8 @@
 model Booking {
   id String @id @default(cuid())
 
-  studentId String
-  tutorId   String
+  studentId      String
+  tutorProfileId String
 
   startAt         DateTime
   endAt           DateTime
@@ -25,12 +25,12 @@ model Booking {
   updatedAt DateTime @updatedAt
 
   student User @relation("BookingStudent", fields: [studentId], references: [id], onDelete: Restrict)
-  tutor   User @relation("BookingTutor", fields: [tutorId], references: [id], onDelete: Restrict)
 
-  review Review?
+  tutorProfile TutorProfile @relation(fields: [tutorProfileId], references: [id], onDelete: Restrict)
+  review       Review?
 
   @@index([studentId])
-  @@index([tutorId])
+  @@index([tutorProfileId])
   @@index([status, startAt])
   @@map("bookings")
 }

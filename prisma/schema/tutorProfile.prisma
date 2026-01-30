@@ -1,7 +1,7 @@
 model TutorProfile {
   id     String @id @default(cuid())
   userId String @unique
-  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   headline   String?
   about      String?
@@ -23,9 +23,11 @@ model TutorProfile {
   isProfileComplete Boolean @default(false)
   isActive          Boolean @default(true)
 
-  status TutorProfileStatus @default(pending)
+  status        TutorProfileStatus @default(pending)
   cancelledById String?
-  cancelledBy   User? @relation("TutorProfileCancelledBy", fields: [cancelledById], references: [id], onDelete: SetNull)
+  cancelledBy   User?              @relation("TutorProfileCancelledBy", fields: [cancelledById], references: [id], onDelete: SetNull)
+
+  bookings Booking[]
 
   cancelReason String?
 

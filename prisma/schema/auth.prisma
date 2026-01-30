@@ -18,7 +18,6 @@ model User {
   accounts               Account[]
   tutorProfile           TutorProfile?
   studentBookings        Booking[]      @relation("BookingStudent")
-  tutorBookings          Booking[]      @relation("BookingTutor")
   studentReviews         Review[]       @relation("ReviewStudent")
   tutorReviews           Review[]       @relation("ReviewTutor")
   cancelledTutorProfiles TutorProfile[] @relation("TutorProfileCancelledBy")
