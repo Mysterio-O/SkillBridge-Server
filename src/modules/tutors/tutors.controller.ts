@@ -1,7 +1,5 @@
 import { NextFunction, Request, Response } from "express";
 import { tutorService } from "./tutors.service";
-import { success } from "better-auth/*";
-import { TutorProfileStatus } from "../../../generated/prisma/enums";
 import { UserRole } from "../../middleware/auth";
 
 
@@ -69,10 +67,42 @@ const updateTutorApplication = async (req: Request, res: Response, next: NextFun
         // console.log(e);
         next(e);
     }
-}
+};
+
+const getTutors = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const result = await tutorService.getTutors(req.query);
+
+        return res.status(200).json({
+            success: true,
+            message: "tutors fetched",
+            tutors:result,
+        });
+    } catch (e) {
+        console.log(e);
+        next(e);
+    }
+};
+
+const getTutorById = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const { id } = req.params;
+        const result = await tutorService.getTutorById(id as string);
+
+        return res.status(200).json({
+            success: true,
+            message: "tutor fetched",
+            tutor:result,
+        });
+    } catch (e) {
+        next(e);
+    }
+};
 
 
 export const tutorController = {
     addTutor,
     updateTutorApplication,
+    getTutors,
+    getTutorById,
 }
