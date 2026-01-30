@@ -272,6 +272,13 @@ export type EnumMeetingPlatformFilter<$PrismaModel = never> = {
   not?: Prisma.NestedEnumMeetingPlatformFilter<$PrismaModel> | $Enums.MeetingPlatform
 }
 
+export type EnumTutorProfileStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.TutorProfileStatus | Prisma.EnumTutorProfileStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.TutorProfileStatus[] | Prisma.ListEnumTutorProfileStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.TutorProfileStatus[] | Prisma.ListEnumTutorProfileStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumTutorProfileStatusFilter<$PrismaModel> | $Enums.TutorProfileStatus
+}
+
 export type DecimalNullableWithAggregatesFilter<$PrismaModel = never> = {
   equals?: runtime.Decimal | runtime.DecimalJsLike | number | string | Prisma.DecimalFieldRefInput<$PrismaModel> | null
   in?: runtime.Decimal[] | runtime.DecimalJsLike[] | number[] | string[] | Prisma.ListDecimalFieldRefInput<$PrismaModel> | null
@@ -322,6 +329,16 @@ export type EnumMeetingPlatformWithAggregatesFilter<$PrismaModel = never> = {
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumMeetingPlatformFilter<$PrismaModel>
   _max?: Prisma.NestedEnumMeetingPlatformFilter<$PrismaModel>
+}
+
+export type EnumTutorProfileStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.TutorProfileStatus | Prisma.EnumTutorProfileStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.TutorProfileStatus[] | Prisma.ListEnumTutorProfileStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.TutorProfileStatus[] | Prisma.ListEnumTutorProfileStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumTutorProfileStatusWithAggregatesFilter<$PrismaModel> | $Enums.TutorProfileStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumTutorProfileStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumTutorProfileStatusFilter<$PrismaModel>
 }
 
 export type NestedStringFilter<$PrismaModel = never> = {
@@ -584,6 +601,13 @@ export type NestedEnumMeetingPlatformFilter<$PrismaModel = never> = {
   not?: Prisma.NestedEnumMeetingPlatformFilter<$PrismaModel> | $Enums.MeetingPlatform
 }
 
+export type NestedEnumTutorProfileStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.TutorProfileStatus | Prisma.EnumTutorProfileStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.TutorProfileStatus[] | Prisma.ListEnumTutorProfileStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.TutorProfileStatus[] | Prisma.ListEnumTutorProfileStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumTutorProfileStatusFilter<$PrismaModel> | $Enums.TutorProfileStatus
+}
+
 export type NestedDecimalNullableWithAggregatesFilter<$PrismaModel = never> = {
   equals?: runtime.Decimal | runtime.DecimalJsLike | number | string | Prisma.DecimalFieldRefInput<$PrismaModel> | null
   in?: runtime.Decimal[] | runtime.DecimalJsLike[] | number[] | string[] | Prisma.ListDecimalFieldRefInput<$PrismaModel> | null
@@ -645,6 +669,16 @@ export type NestedEnumMeetingPlatformWithAggregatesFilter<$PrismaModel = never> 
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumMeetingPlatformFilter<$PrismaModel>
   _max?: Prisma.NestedEnumMeetingPlatformFilter<$PrismaModel>
+}
+
+export type NestedEnumTutorProfileStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.TutorProfileStatus | Prisma.EnumTutorProfileStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.TutorProfileStatus[] | Prisma.ListEnumTutorProfileStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.TutorProfileStatus[] | Prisma.ListEnumTutorProfileStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumTutorProfileStatusWithAggregatesFilter<$PrismaModel> | $Enums.TutorProfileStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumTutorProfileStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumTutorProfileStatusFilter<$PrismaModel>
 }
 
 

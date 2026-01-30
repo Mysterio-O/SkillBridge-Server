@@ -45,3 +45,11 @@ export const CancelledBy = {
 } as const
 
 export type CancelledBy = (typeof CancelledBy)[keyof typeof CancelledBy]
+
+
+export const TutorProfileStatus = {
+  pending: 'pending',
+  active: 'active'
+} as const
+
+export type TutorProfileStatus = (typeof TutorProfileStatus)[keyof typeof TutorProfileStatus]

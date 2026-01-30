@@ -23,3 +23,8 @@ enum CancelledBy {
   tutor
   admin
 }
+
+enum TutorProfileStatus {
+  pending
+  active
+}

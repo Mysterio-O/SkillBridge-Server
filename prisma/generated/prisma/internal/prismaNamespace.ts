@@ -1262,6 +1262,7 @@ export const TutorProfileScalarFieldEnum = {
   timezone: 'timezone',
   isProfileComplete: 'isProfileComplete',
   isActive: 'isActive',
+  status: 'status',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -1415,6 +1416,20 @@ export type EnumMeetingPlatformFieldRefInput<$PrismaModel> = FieldRefInputType<$
  * Reference to a field of type 'MeetingPlatform[]'
  */
 export type ListEnumMeetingPlatformFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'MeetingPlatform[]'>
+    
+
+
+/**
+ * Reference to a field of type 'TutorProfileStatus'
+ */
+export type EnumTutorProfileStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TutorProfileStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'TutorProfileStatus[]'
+ */
+export type ListEnumTutorProfileStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'TutorProfileStatus[]'>
     
 
 

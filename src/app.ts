@@ -6,6 +6,7 @@ import { auth } from './lib/auth';
 import cors from 'cors'
 import errorHandler from './middleware/globalErrorHandler';
 import { notFound } from './middleware/notFound';
+import { tutorRouter } from './modules/tutors/tutors.route';
 
 const app: Application = express();
 app.all('/api/auth/{*any}', toNodeHandler(auth));
@@ -24,6 +25,9 @@ app.get("/", async (req, res) => {
     // console.log("Hello World")
     res.send("Hello World")
 });
+
+
+app.use("/api/tutor",tutorRouter);
 
 
 app.use(errorHandler);

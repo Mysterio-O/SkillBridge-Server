@@ -57,6 +57,7 @@ export type TutorProfileMinAggregateOutputType = {
   timezone: string | null
   isProfileComplete: boolean | null
   isActive: boolean | null
+  status: $Enums.TutorProfileStatus | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -78,6 +79,7 @@ export type TutorProfileMaxAggregateOutputType = {
   timezone: string | null
   isProfileComplete: boolean | null
   isActive: boolean | null
+  status: $Enums.TutorProfileStatus | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -100,6 +102,7 @@ export type TutorProfileCountAggregateOutputType = {
   timezone: number
   isProfileComplete: number
   isActive: number
+  status: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -137,6 +140,7 @@ export type TutorProfileMinAggregateInputType = {
   timezone?: true
   isProfileComplete?: true
   isActive?: true
+  status?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -158,6 +162,7 @@ export type TutorProfileMaxAggregateInputType = {
   timezone?: true
   isProfileComplete?: true
   isActive?: true
+  status?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -180,6 +185,7 @@ export type TutorProfileCountAggregateInputType = {
   timezone?: true
   isProfileComplete?: true
   isActive?: true
+  status?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -289,6 +295,7 @@ export type TutorProfileGroupByOutputType = {
   timezone: string | null
   isProfileComplete: boolean
   isActive: boolean
+  status: $Enums.TutorProfileStatus
   createdAt: Date
   updatedAt: Date
   _count: TutorProfileCountAggregateOutputType | null
@@ -334,6 +341,7 @@ export type TutorProfileWhereInput = {
   timezone?: Prisma.StringNullableFilter<"TutorProfile"> | string | null
   isProfileComplete?: Prisma.BoolFilter<"TutorProfile"> | boolean
   isActive?: Prisma.BoolFilter<"TutorProfile"> | boolean
+  status?: Prisma.EnumTutorProfileStatusFilter<"TutorProfile"> | $Enums.TutorProfileStatus
   createdAt?: Prisma.DateTimeFilter<"TutorProfile"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"TutorProfile"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
@@ -358,6 +366,7 @@ export type TutorProfileOrderByWithRelationInput = {
   timezone?: Prisma.SortOrderInput | Prisma.SortOrder
   isProfileComplete?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
+  status?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   user?: Prisma.UserOrderByWithRelationInput
@@ -385,6 +394,7 @@ export type TutorProfileWhereUniqueInput = Prisma.AtLeast<{
   timezone?: Prisma.StringNullableFilter<"TutorProfile"> | string | null
   isProfileComplete?: Prisma.BoolFilter<"TutorProfile"> | boolean
   isActive?: Prisma.BoolFilter<"TutorProfile"> | boolean
+  status?: Prisma.EnumTutorProfileStatusFilter<"TutorProfile"> | $Enums.TutorProfileStatus
   createdAt?: Prisma.DateTimeFilter<"TutorProfile"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"TutorProfile"> | Date | string
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
@@ -409,6 +419,7 @@ export type TutorProfileOrderByWithAggregationInput = {
   timezone?: Prisma.SortOrderInput | Prisma.SortOrder
   isProfileComplete?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
+  status?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.TutorProfileCountOrderByAggregateInput
@@ -439,6 +450,7 @@ export type TutorProfileScalarWhereWithAggregatesInput = {
   timezone?: Prisma.StringNullableWithAggregatesFilter<"TutorProfile"> | string | null
   isProfileComplete?: Prisma.BoolWithAggregatesFilter<"TutorProfile"> | boolean
   isActive?: Prisma.BoolWithAggregatesFilter<"TutorProfile"> | boolean
+  status?: Prisma.EnumTutorProfileStatusWithAggregatesFilter<"TutorProfile"> | $Enums.TutorProfileStatus
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"TutorProfile"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"TutorProfile"> | Date | string
 }
@@ -460,6 +472,7 @@ export type TutorProfileCreateInput = {
   timezone?: string | null
   isProfileComplete?: boolean
   isActive?: boolean
+  status?: $Enums.TutorProfileStatus
   createdAt?: Date | string
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutTutorProfileInput
@@ -484,6 +497,7 @@ export type TutorProfileUncheckedCreateInput = {
   timezone?: string | null
   isProfileComplete?: boolean
   isActive?: boolean
+  status?: $Enums.TutorProfileStatus
   createdAt?: Date | string
   updatedAt?: Date | string
   subjects?: Prisma.TutorSubjectsUncheckedCreateNestedManyWithoutTutorInput
@@ -506,6 +520,7 @@ export type TutorProfileUpdateInput = {
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isProfileComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  status?: Prisma.EnumTutorProfileStatusFieldUpdateOperationsInput | $Enums.TutorProfileStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutTutorProfileNestedInput
@@ -530,6 +545,7 @@ export type TutorProfileUncheckedUpdateInput = {
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isProfileComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  status?: Prisma.EnumTutorProfileStatusFieldUpdateOperationsInput | $Enums.TutorProfileStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   subjects?: Prisma.TutorSubjectsUncheckedUpdateManyWithoutTutorNestedInput
@@ -553,6 +569,7 @@ export type TutorProfileCreateManyInput = {
   timezone?: string | null
   isProfileComplete?: boolean
   isActive?: boolean
+  status?: $Enums.TutorProfileStatus
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -574,6 +591,7 @@ export type TutorProfileUpdateManyMutationInput = {
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isProfileComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  status?: Prisma.EnumTutorProfileStatusFieldUpdateOperationsInput | $Enums.TutorProfileStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -596,6 +614,7 @@ export type TutorProfileUncheckedUpdateManyInput = {
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isProfileComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  status?: Prisma.EnumTutorProfileStatusFieldUpdateOperationsInput | $Enums.TutorProfileStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -636,6 +655,7 @@ export type TutorProfileCountOrderByAggregateInput = {
   timezone?: Prisma.SortOrder
   isProfileComplete?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
+  status?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -664,6 +684,7 @@ export type TutorProfileMaxOrderByAggregateInput = {
   timezone?: Prisma.SortOrder
   isProfileComplete?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
+  status?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -685,6 +706,7 @@ export type TutorProfileMinOrderByAggregateInput = {
   timezone?: Prisma.SortOrder
   isProfileComplete?: Prisma.SortOrder
   isActive?: Prisma.SortOrder
+  status?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -775,6 +797,10 @@ export type EnumMeetingPlatformFieldUpdateOperationsInput = {
   set?: $Enums.MeetingPlatform
 }
 
+export type EnumTutorProfileStatusFieldUpdateOperationsInput = {
+  set?: $Enums.TutorProfileStatus
+}
+
 export type TutorProfileCreateWithoutUserInput = {
   id?: string
   headline?: string | null
@@ -792,6 +818,7 @@ export type TutorProfileCreateWithoutUserInput = {
   timezone?: string | null
   isProfileComplete?: boolean
   isActive?: boolean
+  status?: $Enums.TutorProfileStatus
   createdAt?: Date | string
   updatedAt?: Date | string
   subjects?: Prisma.TutorSubjectsCreateNestedManyWithoutTutorInput
@@ -814,6 +841,7 @@ export type TutorProfileUncheckedCreateWithoutUserInput = {
   timezone?: string | null
   isProfileComplete?: boolean
   isActive?: boolean
+  status?: $Enums.TutorProfileStatus
   createdAt?: Date | string
   updatedAt?: Date | string
   subjects?: Prisma.TutorSubjectsUncheckedCreateNestedManyWithoutTutorInput
@@ -852,6 +880,7 @@ export type TutorProfileUpdateWithoutUserInput = {
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isProfileComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  status?: Prisma.EnumTutorProfileStatusFieldUpdateOperationsInput | $Enums.TutorProfileStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   subjects?: Prisma.TutorSubjectsUpdateManyWithoutTutorNestedInput
@@ -874,6 +903,7 @@ export type TutorProfileUncheckedUpdateWithoutUserInput = {
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isProfileComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  status?: Prisma.EnumTutorProfileStatusFieldUpdateOperationsInput | $Enums.TutorProfileStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   subjects?: Prisma.TutorSubjectsUncheckedUpdateManyWithoutTutorNestedInput
@@ -896,6 +926,7 @@ export type TutorProfileCreateWithoutSubjectsInput = {
   timezone?: string | null
   isProfileComplete?: boolean
   isActive?: boolean
+  status?: $Enums.TutorProfileStatus
   createdAt?: Date | string
   updatedAt?: Date | string
   user: Prisma.UserCreateNestedOneWithoutTutorProfileInput
@@ -919,6 +950,7 @@ export type TutorProfileUncheckedCreateWithoutSubjectsInput = {
   timezone?: string | null
   isProfileComplete?: boolean
   isActive?: boolean
+  status?: $Enums.TutorProfileStatus
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -956,6 +988,7 @@ export type TutorProfileUpdateWithoutSubjectsInput = {
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isProfileComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  status?: Prisma.EnumTutorProfileStatusFieldUpdateOperationsInput | $Enums.TutorProfileStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   user?: Prisma.UserUpdateOneRequiredWithoutTutorProfileNestedInput
@@ -979,6 +1012,7 @@ export type TutorProfileUncheckedUpdateWithoutSubjectsInput = {
   timezone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   isProfileComplete?: Prisma.BoolFieldUpdateOperationsInput | boolean
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  status?: Prisma.EnumTutorProfileStatusFieldUpdateOperationsInput | $Enums.TutorProfileStatus
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -1032,6 +1066,7 @@ export type TutorProfileSelect<ExtArgs extends runtime.Types.Extensions.Internal
   timezone?: boolean
   isProfileComplete?: boolean
   isActive?: boolean
+  status?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -1057,6 +1092,7 @@ export type TutorProfileSelectCreateManyAndReturn<ExtArgs extends runtime.Types.
   timezone?: boolean
   isProfileComplete?: boolean
   isActive?: boolean
+  status?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -1080,6 +1116,7 @@ export type TutorProfileSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.
   timezone?: boolean
   isProfileComplete?: boolean
   isActive?: boolean
+  status?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
@@ -1103,11 +1140,12 @@ export type TutorProfileSelectScalar = {
   timezone?: boolean
   isProfileComplete?: boolean
   isActive?: boolean
+  status?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type TutorProfileOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "headline" | "about" | "hourlyRate" | "currency" | "avgRating" | "reviewCount" | "yearsOfExperience" | "languages" | "education" | "certification" | "sessionMode" | "meetingPlatform" | "timezone" | "isProfileComplete" | "isActive" | "createdAt" | "updatedAt", ExtArgs["result"]["tutorProfile"]>
+export type TutorProfileOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "userId" | "headline" | "about" | "hourlyRate" | "currency" | "avgRating" | "reviewCount" | "yearsOfExperience" | "languages" | "education" | "certification" | "sessionMode" | "meetingPlatform" | "timezone" | "isProfileComplete" | "isActive" | "status" | "createdAt" | "updatedAt", ExtArgs["result"]["tutorProfile"]>
 export type TutorProfileInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   subjects?: boolean | Prisma.TutorProfile$subjectsArgs<ExtArgs>
@@ -1144,6 +1182,7 @@ export type $TutorProfilePayload<ExtArgs extends runtime.Types.Extensions.Intern
     timezone: string | null
     isProfileComplete: boolean
     isActive: boolean
+    status: $Enums.TutorProfileStatus
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["tutorProfile"]>
@@ -1588,6 +1627,7 @@ export interface TutorProfileFieldRefs {
   readonly timezone: Prisma.FieldRef<"TutorProfile", 'String'>
   readonly isProfileComplete: Prisma.FieldRef<"TutorProfile", 'Boolean'>
   readonly isActive: Prisma.FieldRef<"TutorProfile", 'Boolean'>
+  readonly status: Prisma.FieldRef<"TutorProfile", 'TutorProfileStatus'>
   readonly createdAt: Prisma.FieldRef<"TutorProfile", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"TutorProfile", 'DateTime'>
 }

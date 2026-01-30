@@ -223,6 +223,7 @@ export const TutorProfileScalarFieldEnum = {
   timezone: 'timezone',
   isProfileComplete: 'isProfileComplete',
   isActive: 'isActive',
+  status: 'status',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const

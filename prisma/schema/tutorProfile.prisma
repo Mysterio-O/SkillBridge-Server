@@ -22,6 +22,8 @@ model TutorProfile {
   isProfileComplete Boolean @default(false)
   isActive          Boolean @default(true)
 
+  status TutorProfileStatus @default(pending)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
