@@ -6,6 +6,10 @@ import auth, { UserRole } from "../../middleware/auth";
 const router = express.Router();
 
 
-router.post("/", auth(UserRole.STUDENT), bookingController.createBooking);
+router.get("/", auth(UserRole.ADMIN, UserRole.STUDENT), bookingController.getBookings);
+
+router.get("/:id", auth(UserRole.ADMIN, UserRole.STUDENT), bookingController.getBooking);
+
+router.post("/", auth(UserRole.STUDENT, UserRole.ADMIN), bookingController.createBooking);
 
 export const bookingRouter = router;

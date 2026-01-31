@@ -60,8 +60,67 @@ export const createBooking = async (studentUserId: string, payload: CreateBookin
   return result;
 };
 
+const getBookings = async (id: string) => {
+  const result = await prisma.booking.findMany({
+    where: {
+      studentId: id
+    },
+    include: {
+      tutorProfile: {
+        include: {
+          subjects: true,
+          user: {
+            select: {
+              name: true,
+              email: true,
+              phone: true
+            }
+          }
+        }
+      },
+      student: {
+        select: {
+          name: true,
+          email: true,
+          phone: true
+        }
+      },
+      review: true
+    }
+  });
+  return result;
+}
+
+
+const getBooking = async (bookingId: string) => {
+  const booking = await prisma.booking.findUniqueOrThrow({
+    where: {
+      id: bookingId
+    },
+    include: {
+      tutorProfile: {
+        include: {
+          subjects: true,
+        }
+      },
+      student: {
+        select: {
+          name: true,
+          email: true,
+          phone: true
+        }
+      },
+      review: true
+    }
+  });
+
+  return booking
+}
+
 
 
 export const bookingService = {
-    createBooking,
+  createBooking,
+  getBookings,
+  getBooking,
 }
