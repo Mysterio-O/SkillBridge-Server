@@ -10,6 +10,9 @@ router.get("/:id", tutorController.getTutorById)
 
 router.post("/", tutorController.addTutor);
 
+router.put("/profile", auth(UserRole.TUTOR), tutorController.updateTutorProfile);
+
 router.patch("/:id/update", auth(UserRole.ADMIN), tutorController.updateTutorApplication);
+
 
 export const tutorRouter = router;

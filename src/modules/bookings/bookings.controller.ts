@@ -64,7 +64,18 @@ const getBooking = async (req: Request, res: Response, next: NextFunction) => {
             message: "booking id not found"
         });
 
+        const user = req.user;
+        if (!user) return res.status(401).json({
+            success: false,
+            message: "unauthorized access"
+        })
+
         const result = await bookingService.getBooking(bookingId as string);
+
+        if (result.studentId !== user.id) return res.status(401).json({
+            success: false,
+            message: "unauthorized access"
+        })
 
         res.status(200).json({
             success: true,

@@ -16,32 +16,51 @@ const addTutor = async (payload: Omit<TutorProfile, 'id' | 'createdAt' | 'update
 };
 
 
-const updateTutorApplication = async (
-    applicationId: string,
-    status: TutorProfileStatus,
-    adminId: string
+export const updateTutorApplication = async (
+  applicationId: string,
+  status: TutorProfileStatus,
+  adminId: string
 ) => {
-    const application = await prisma.tutorProfile.findUniqueOrThrow({
-        where: { id: applicationId },
-        select: { id: true, userId: true, status: true },
+  return prisma.$transaction(async (tx) => {
+    const application = await tx.tutorProfile.findUniqueOrThrow({
+      where: { id: applicationId },
+      select: { id: true, userId: true, status: true },
     });
 
-    // Prisma-safe typed update object
-    const data: Prisma.TutorProfileUpdateInput = { status: status };
-
-    // only set canceller when cancelled
-    if (status === "cancelled") {
-        data.cancelledBy = { connect: { id: adminId } };
-    } else {
-        data.cancelledBy = { disconnect: true };
+    if (application.status === status) {
+      return tx.tutorProfile.findUniqueOrThrow({ where: { id: applicationId } });
     }
 
-    const result = await prisma.tutorProfile.update({
-        where: { id: application.id },
-        data,
+    const profileData: Prisma.TutorProfileUpdateInput = {
+      status,
+      cancelledBy:
+        status === "cancelled"
+          ? { connect: { id: adminId } }
+          : { disconnect: true },
+    };
+
+    const updatedProfile = await tx.tutorProfile.update({
+      where: { id: application.id },
+      data: profileData,
     });
 
-    return result;
+    
+    if (status === "active") {
+      await tx.user.update({
+        where: { id: application.userId },
+        data: { role: "tutor" },
+      });
+    }
+
+    if (status === "cancelled") {
+      await tx.user.update({
+        where: { id: application.userId },
+        data: { role: "student" },
+      });
+    }
+
+    return updatedProfile;
+  });
 };
 
 const getTutors = async (query: Query) => {
@@ -126,10 +145,33 @@ const getTutorById = async (id: string) => {
     return tutor;
 };
 
+const updateTutorProfile = async (payload: Omit<TutorProfile, 'id' | 'createdAt' | 'updatedAt' | 'userId'>, userId: string) => {
+
+
+    const result = await prisma.tutorProfile.update({
+        where: {
+            userId: userId
+        },
+        data: payload,
+        include: {
+            user: {
+                select: {
+                    name: true,
+                    email: true,
+                    phone: true
+                }
+            }
+        }
+    });
+
+    return result;
+}
+
 
 export const tutorService = {
     addTutor,
     updateTutorApplication,
     getTutors,
     getTutorById,
+    updateTutorProfile,
 }

@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { tutorService } from "./tutors.service";
 import { UserRole } from "../../middleware/auth";
+import { success } from "better-auth/*";
 
 
 const addTutor = async (req: Request, res: Response, next: NextFunction) => {
@@ -76,7 +77,7 @@ const getTutors = async (req: Request, res: Response, next: NextFunction) => {
         return res.status(200).json({
             success: true,
             message: "tutors fetched",
-            tutors:result,
+            tutors: result,
         });
     } catch (e) {
         console.log(e);
@@ -92,7 +93,7 @@ const getTutorById = async (req: Request, res: Response, next: NextFunction) => 
         return res.status(200).json({
             success: true,
             message: "tutor fetched",
-            tutor:result,
+            tutor: result,
         });
     } catch (e) {
         next(e);
@@ -100,9 +101,36 @@ const getTutorById = async (req: Request, res: Response, next: NextFunction) => 
 };
 
 
+const updateTutorProfile = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const user = req.user;
+        const data = req.body;
+
+        if (!user) return res.status(401).json({
+            success: false,
+            message: "unauthorized access"
+        });
+
+        const userId = user.id;
+
+        const result = await tutorService.updateTutorProfile(data, userId);
+
+        res.status(200).json({
+            success: true,
+            message: "updated tutor profile",
+            tutor: result
+        })
+
+    }
+    catch (e) {
+        next(e);
+    }
+}
+
 export const tutorController = {
     addTutor,
     updateTutorApplication,
     getTutors,
     getTutorById,
+    updateTutorProfile,
 }
