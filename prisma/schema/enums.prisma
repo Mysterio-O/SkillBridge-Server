@@ -29,3 +29,8 @@ enum TutorProfileStatus {
   active
   cancelled
 }
+
+enum TutorAvailability {
+  available
+  not_available
+}

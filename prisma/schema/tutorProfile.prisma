@@ -23,6 +23,8 @@ model TutorProfile {
   isProfileComplete Boolean @default(false)
   isActive          Boolean @default(true)
 
+  availability TutorAvailability @default(available)
+
   status        TutorProfileStatus @default(pending)
   cancelledById String?
   cancelledBy   User?              @relation("TutorProfileCancelledBy", fields: [cancelledById], references: [id], onDelete: SetNull)

@@ -1,4 +1,4 @@
-import { Prisma, TutorProfile, TutorProfileStatus, } from "../../../generated/prisma/client";
+import { Prisma, TutorAvailability, TutorProfile, TutorProfileStatus, } from "../../../generated/prisma/client";
 import { TutorProfileWhereInput } from "../../../generated/prisma/models";
 import { prisma } from "../../lib/prisma";
 
@@ -17,50 +17,50 @@ const addTutor = async (payload: Omit<TutorProfile, 'id' | 'createdAt' | 'update
 
 
 export const updateTutorApplication = async (
-  applicationId: string,
-  status: TutorProfileStatus,
-  adminId: string
+    applicationId: string,
+    status: TutorProfileStatus,
+    adminId: string
 ) => {
-  return prisma.$transaction(async (tx) => {
-    const application = await tx.tutorProfile.findUniqueOrThrow({
-      where: { id: applicationId },
-      select: { id: true, userId: true, status: true },
+    return prisma.$transaction(async (tx) => {
+        const application = await tx.tutorProfile.findUniqueOrThrow({
+            where: { id: applicationId },
+            select: { id: true, userId: true, status: true },
+        });
+
+        if (application.status === status) {
+            return tx.tutorProfile.findUniqueOrThrow({ where: { id: applicationId } });
+        }
+
+        const profileData: Prisma.TutorProfileUpdateInput = {
+            status,
+            cancelledBy:
+                status === "cancelled"
+                    ? { connect: { id: adminId } }
+                    : { disconnect: true },
+        };
+
+        const updatedProfile = await tx.tutorProfile.update({
+            where: { id: application.id },
+            data: profileData,
+        });
+
+
+        if (status === "active") {
+            await tx.user.update({
+                where: { id: application.userId },
+                data: { role: "tutor" },
+            });
+        }
+
+        if (status === "cancelled") {
+            await tx.user.update({
+                where: { id: application.userId },
+                data: { role: "student" },
+            });
+        }
+
+        return updatedProfile;
     });
-
-    if (application.status === status) {
-      return tx.tutorProfile.findUniqueOrThrow({ where: { id: applicationId } });
-    }
-
-    const profileData: Prisma.TutorProfileUpdateInput = {
-      status,
-      cancelledBy:
-        status === "cancelled"
-          ? { connect: { id: adminId } }
-          : { disconnect: true },
-    };
-
-    const updatedProfile = await tx.tutorProfile.update({
-      where: { id: application.id },
-      data: profileData,
-    });
-
-    
-    if (status === "active") {
-      await tx.user.update({
-        where: { id: application.userId },
-        data: { role: "tutor" },
-      });
-    }
-
-    if (status === "cancelled") {
-      await tx.user.update({
-        where: { id: application.userId },
-        data: { role: "student" },
-      });
-    }
-
-    return updatedProfile;
-  });
 };
 
 const getTutors = async (query: Query) => {
@@ -167,6 +167,18 @@ const updateTutorProfile = async (payload: Omit<TutorProfile, 'id' | 'createdAt'
     return result;
 }
 
+const updateAvailability = async (status: TutorAvailability, userId: string) => {
+    const result = await prisma.tutorProfile.update({
+        where: {
+            userId: userId
+        },
+        data: {
+            availability: status
+        }
+    });
+    return result;
+}
+
 
 export const tutorService = {
     addTutor,
@@ -174,4 +186,5 @@ export const tutorService = {
     getTutors,
     getTutorById,
     updateTutorProfile,
+    updateAvailability,
 }

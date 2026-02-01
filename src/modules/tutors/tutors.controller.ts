@@ -125,6 +125,37 @@ const updateTutorProfile = async (req: Request, res: Response, next: NextFunctio
     catch (e) {
         next(e);
     }
+};
+
+const updateAvailability = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const user = req.user;
+
+        const status = req.body.status;
+
+        if (!user || !user.id) return res.status(401).json({
+            success: false,
+            message: "unauthorized"
+        });
+        console.log(req.body)
+
+        if (status !== 'available' && status !== 'not_available') return res.status(400).json({
+            success: false,
+            message: "Status not allowed. Use 'available' or 'not_available'."
+        });
+
+        const result = await tutorService.updateAvailability(status, user.id);
+
+        res.status(200).json({
+            success: true,
+            message: `availability updated to ${status}`,
+            profile: result
+        })
+
+    }
+    catch (e) {
+        next(e);
+    }
 }
 
 export const tutorController = {
@@ -133,4 +164,5 @@ export const tutorController = {
     getTutors,
     getTutorById,
     updateTutorProfile,
+    updateAvailability,
 }
