@@ -10,6 +10,7 @@ import { tutorRouter } from './modules/tutors/tutors.route';
 import { categoriesRouter } from './modules/categories/categories.route';
 import { bookingRouter } from './modules/bookings/bookings.route';
 import { authRouter } from './modules/auth/auth.route';
+import { adminRouter } from './modules/admin/admin.route';
 
 const app: Application = express();
 app.all('/api/auth/{*any}', toNodeHandler(auth));
@@ -30,7 +31,9 @@ app.get("/", async (req, res) => {
 });
 
 
-app.use("/api/authentication",authRouter);
+app.use("/api/admin/users", adminRouter);
+
+app.use("/api/authentication", authRouter);
 
 app.use("/api/tutor", tutorRouter);
 

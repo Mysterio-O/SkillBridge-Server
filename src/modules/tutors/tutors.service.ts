@@ -64,7 +64,10 @@ export const updateTutorApplication = async (
 };
 
 const getTutors = async (query: Query) => {
-    const { limit, skip, search } = query;
+    const page = Number(query.page) || 1;
+    const limit = Number(query.limit) || 10;
+    const skip = (page - 1) * limit;
+    const search = query.search as string | undefined;
 
     const andConditions: TutorProfileWhereInput[] = [];
 
@@ -73,59 +76,80 @@ const getTutors = async (query: Query) => {
             OR: [
                 {
                     headline: {
-                        contains: search as string,
-                        mode: "insensitive"
-                    }
+                        contains: search,
+                        mode: "insensitive",
+                    },
                 },
                 {
                     about: {
-                        contains: search as string,
-                        mode: "insensitive"
-                    }
+                        contains: search,
+                        mode: "insensitive",
+                    },
                 },
                 {
                     subjects: {
                         some: {
                             category: {
                                 name: {
-                                    contains: search as string,
-                                    mode: 'insensitive'
-                                }
-                            }
-                        }
-                    }
+                                    contains: search,
+                                    mode: "insensitive",
+                                },
+                            },
+                        },
+                    },
                 },
                 {
                     user: {
-                        name: search,
-                        bio: search,
-                        email: search
-                    }
-                }
-            ]
-        })
+                        OR: [
+                            { name: { contains: search, mode: "insensitive" } },
+                            { bio: { contains: search, mode: "insensitive" } },
+                            { email: { contains: search, mode: "insensitive" } },
+                        ],
+                    },
+                },
+            ],
+        });
+    }
+
+    const whereCondition: Prisma.TutorProfileWhereInput = {
+        AND: andConditions,
     };
 
-    const result = await prisma.tutorProfile.findMany({
-        take: limit as number,
-        skip: skip as number,
-        where: {
-            AND: andConditions
-        },
-        include: {
-            subjects: {
-                include: {
-                    category: true
-                }
-            }
-        }
+    const { tutors, total } = await prisma.$transaction(async (tx) => {
+        const tutors = await tx.tutorProfile.findMany({
+            take: limit,
+            skip,
+            where: whereCondition,
+            include: {
+                subjects: {
+                    include: {
+                        category: true,
+                    },
+                },
+                user: true,
+            },
+        });
+
+        const total = await tx.tutorProfile.count({
+            where: whereCondition,
+        });
+
+        return { tutors, total };
     });
 
-    console.log(result);
+    const totalPages = Math.ceil(total / limit);
 
-    return result.length > 0 ? result : []
-
-
+    return {
+        meta: {
+            page,
+            limit,
+            total,
+            totalPages,
+            hasNext: page < totalPages,
+            hasPrev: page > 1,
+        },
+        data: tutors,
+    };
 };
 
 const getTutorById = async (id: string) => {
