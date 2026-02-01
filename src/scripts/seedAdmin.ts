@@ -35,7 +35,7 @@ async function seedAdmin() {
         }
 
         console.log("calling sign-up endpoint..");
-        const res = await fetch("http://localhost:8080/api/auth/sign-up/email", {
+        const res = await fetch(process.env.SEED_ADMIN_URL as string, {
             method: "POST",
             headers: {
                 "content-type": "application/json",

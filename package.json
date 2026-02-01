@@ -6,7 +6,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "npx tsx watch src/server.ts",
-    "seedAdmin": "npx tsx src/scripts/seedAdmin.ts"
+    "seedAdmin": "npx tsx src/scripts/seedAdmin.ts",
+    "build": "prisma generate && tsup",
+    "postinstall": "prisma generate"
   },
   "keywords": [],
   "author": "",
@@ -19,7 +21,8 @@
     "cors": "^2.8.6",
     "express": "^5.2.1",
     "nodemailer": "^7.0.12",
-    "pg": "^8.17.2"
+    "pg": "^8.17.2",
+    "tsup": "^8.5.1"
   },
   "devDependencies": {
     "@better-auth/cli": "^1.4.17",
@@ -28,6 +31,8 @@
     "@types/node": "^25.0.10",
     "@types/nodemailer": "^7.0.9",
     "dotenv": "^17.2.3",
-    "prisma": "^7.3.0"
+    "prisma": "^7.3.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
   }
 }
