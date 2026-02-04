@@ -7,6 +7,7 @@ var __export = (target, all) => {
 // src/app.ts
 import * as dotenv from "dotenv";
 import express5 from "express";
+import cors from "cors";
 import { toNodeHandler } from "better-auth/node";
 
 // src/lib/auth.ts
@@ -286,15 +287,31 @@ var transporter = nodemailer.createTransport({
     pass: process.env.APP_PASSWORD
   }
 });
+var isProd = process.env.NODE_ENV === "production";
 var auth = betterAuth({
+  baseURL: process.env.BETTER_AUTH_URL,
+  // e.g. https://skill-bridge-server-theta.vercel.app
+  secret: process.env.BETTER_AUTH_SECRET,
   database: prismaAdapter(prisma, {
     provider: "postgresql"
     // or "mysql", "postgresql", ...etc
   }),
   trustedOrigins: [
-    "http://localhost:3000",
-    "http://localhost:8080"
-  ],
+    process.env.FRONTEND_URL,
+    // e.g. https://skill-bridge.vercel.app
+    "http://localhost:3000"
+  ].filter(Boolean),
+  advanced: {
+    useSecureCookies: isProd,
+    defaultCookieAttributes: isProd ? {
+      sameSite: "none",
+      secure: true,
+      partitioned: true
+    } : {
+      sameSite: "lax",
+      secure: false
+    }
+  },
   user: {
     additionalFields: {
       role: { type: ["student", "tutor", "admin"], required: false, defaultValue: "student", input: false },
@@ -318,7 +335,7 @@ var auth = betterAuth({
       const verificationUrl = `${process.env.APP_URL}/verify-email?token=${token}`;
       try {
         const info = await transporter.sendMail({
-          from: '"Skill Bridge" <noreply@skill-bridge.com>',
+          from: `"Skill Bridge" <${process.env.APP_USER}>`,
           // sender address
           to: user.email,
           // list of recipients
@@ -357,7 +374,7 @@ var auth = betterAuth({
               </h2>
 
               <p style="font-size:14px;line-height:1.6;">
-                Hi{${user.name}},
+                Hi ${user.name ? user.name : "there"},
               </p>
 
               <p style="font-size:14px;line-height:1.6;">
@@ -368,7 +385,7 @@ var auth = betterAuth({
               <table cellpadding="0" cellspacing="0" style="margin:24px 0;">
                 <tr>
                   <td>
-                    <a href="{${verificationUrl}}"
+                    <a href="${verificationUrl}"
                       style="
                         background:#2563eb;
                         color:#ffffff;
@@ -390,7 +407,7 @@ var auth = betterAuth({
               </p>
 
               <p style="font-size:12px;word-break:break-all;color:#2563eb;">
-                {${verificationUrl}}
+                ${verificationUrl}
               </p>
 
               <p style="font-size:13px;color:#6b7280;line-height:1.6;margin-top:24px;">
@@ -406,7 +423,7 @@ var auth = betterAuth({
           <!-- Footer -->
           <tr>
             <td style="background:#f9fafb;padding:16px;text-align:center;font-size:12px;color:#9ca3af;">
-              \xA9 {${(/* @__PURE__ */ new Date()).getFullYear()}} Skill Bridge. All rights reserved.
+              \xA9 ${(/* @__PURE__ */ new Date()).getFullYear()} Skill Bridge. All rights reserved.
             </td>
           </tr>
 
@@ -435,9 +452,6 @@ var auth = betterAuth({
     }
   }
 });
-
-// src/app.ts
-import cors from "cors";
 
 // src/middleware/globalErrorHandler.ts
 function prismaSafeDetails(err) {
@@ -1279,11 +1293,21 @@ var adminRouter = router5;
 // src/app.ts
 dotenv.config();
 var app = express5();
-app.all("/api/auth/{*any}", toNodeHandler(auth));
-app.use(cors({
-  origin: ["http://localhost:3000"],
-  credentials: true
-}));
+app.set("trust proxy", 1);
+var allowedOrigins = [
+  process.env.FRONTEND_URL,
+  // e.g. https://skill-bridge.vercel.app
+  "http://localhost:3000"
+].filter(Boolean);
+app.use(
+  cors({
+    origin: allowedOrigins,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+    // allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+app.all("/api/auth/*any", toNodeHandler(auth));
 app.use(express5.json());
 app.get("/", async (req, res) => {
   res.send("Hello World");

@@ -4,52 +4,70 @@ import { prisma } from "./prisma";
 import nodemailer from 'nodemailer'
 
 const transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 587,
-    secure: false, // use STARTTLS (upgrade connection to TLS after connecting)
-    auth: {
-        user: process.env.APP_USER,
-        pass: process.env.APP_PASSWORD,
-    },
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: false, // use STARTTLS (upgrade connection to TLS after connecting)
+  auth: {
+    user: process.env.APP_USER,
+    pass: process.env.APP_PASSWORD,
+  },
 });
 
+const isProd = process.env.NODE_ENV === "production";
+
 export const auth = betterAuth({
-    database: prismaAdapter(prisma, {
-        provider: "postgresql", // or "mysql", "postgresql", ...etc
-    }),
-    trustedOrigins: [
-        "http://localhost:3000",
-        "http://localhost:8080",
-    ],
-    user: {
-        additionalFields: {
-            role: { type: ["student", "tutor", "admin"], required: false, defaultValue: "student", input: false },
-            phone: { type: "string", required: false },
-            status: { type: ["active", "banned", "inactive"], required: false, defaultValue: "active", input: false },
-            bio: { type: "string", required: false },
-            lastLoginAt: { type: "date", required: false, input: false },
-            bannedAt: { type: "date", required: false, input: false },
-            banReason: { type: "string", required: false, input: false },
-        },
+  baseURL: process.env.BETTER_AUTH_URL,
+  secret: process.env.BETTER_AUTH_SECRET,
+
+  database: prismaAdapter(prisma, {
+    provider: "postgresql", // or "mysql", "postgresql", ...etc
+  }),
+  trustedOrigins: [
+    process.env.FRONTEND_URL,
+    "http://localhost:3000",
+  ].filter(Boolean) as string[],
+  advanced: {
+    useSecureCookies: isProd,
+    defaultCookieAttributes: isProd
+      ? {
+        sameSite: "none",
+        secure: true,
+        partitioned: true,
+      }
+      : {
+        sameSite: "lax",
+        secure: false,
+      },
+  },
+  user: {
+    additionalFields: {
+      role: { type: ["student", "tutor", "admin"], required: false, defaultValue: "student", input: false },
+      phone: { type: "string", required: false },
+      status: { type: ["active", "banned", "inactive"], required: false, defaultValue: "active", input: false },
+      bio: { type: "string", required: false },
+      lastLoginAt: { type: "date", required: false, input: false },
+      bannedAt: { type: "date", required: false, input: false },
+      banReason: { type: "string", required: false, input: false },
     },
-    emailAndPassword: {
-        enabled: true,
-        autoSignIn: false,
-        requireEmailVerification: true
-    },
-    emailVerification: {
-        sendOnSignUp: true,
-        autoSignInAfterVerification: true,
-        sendVerificationEmail: async ({ user, url, token }, request) => {
-            // console.log(user,url,token)
-            const verificationUrl = `${process.env.APP_URL}/verify-email?token=${token}`
-            try {
-                const info = await transporter.sendMail({
-                    from: '"Skill Bridge" <noreply@skill-bridge.com>', // sender address
-                    to: user.email, // list of recipients
-                    subject: "Verify Your Skill Bridge Account", // subject line
-                    text: "Verification Email", // plain text body
-                    html: `
+  },
+  emailAndPassword: {
+    enabled: true,
+    autoSignIn: false,
+    requireEmailVerification: true
+  },
+  emailVerification: {
+    sendOnSignUp: true,
+    autoSignInAfterVerification: true,
+    sendVerificationEmail: async ({ user, url, token }, request) => {
+      // console.log(user,url,token)
+      const verificationUrl = `${process.env.APP_URL}/verify-email?token=${token}`
+      try {
+        const info = await transporter.sendMail({
+          from: `"Skill Bridge" <${process.env.APP_USER}>`, // sender address
+          to: user.email, // list of recipients
+          subject: "Verify Your Skill Bridge Account", // subject line
+          text: "Verification Email", // plain text body
+          html: `
                     <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -80,7 +98,7 @@ export const auth = betterAuth({
               </h2>
 
               <p style="font-size:14px;line-height:1.6;">
-                Hi{${user.name}},
+                Hi ${user.name?user.name:'there'},
               </p>
 
               <p style="font-size:14px;line-height:1.6;">
@@ -91,7 +109,7 @@ export const auth = betterAuth({
               <table cellpadding="0" cellspacing="0" style="margin:24px 0;">
                 <tr>
                   <td>
-                    <a href="{${verificationUrl}}"
+                    <a href="${verificationUrl}"
                       style="
                         background:#2563eb;
                         color:#ffffff;
@@ -113,7 +131,7 @@ export const auth = betterAuth({
               </p>
 
               <p style="font-size:12px;word-break:break-all;color:#2563eb;">
-                {${verificationUrl}}
+                ${verificationUrl}
               </p>
 
               <p style="font-size:13px;color:#6b7280;line-height:1.6;margin-top:24px;">
@@ -129,7 +147,7 @@ export const auth = betterAuth({
           <!-- Footer -->
           <tr>
             <td style="background:#f9fafb;padding:16px;text-align:center;font-size:12px;color:#9ca3af;">
-              © {${new Date().getFullYear()}} Skill Bridge. All rights reserved.
+              © ${new Date().getFullYear()} Skill Bridge. All rights reserved.
             </td>
           </tr>
 
@@ -141,22 +159,22 @@ export const auth = betterAuth({
 </html>
 
                     `
-                });
+        });
 
-                console.log("Message sent: %s", info.messageId);
-                // Preview URL is only available when using an Ethereal test account
-                console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
-            } catch (err) {
-                console.error("Error while sending mail", err);
-            }
-        },
+        console.log("Message sent: %s", info.messageId);
+        // Preview URL is only available when using an Ethereal test account
+        console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
+      } catch (err) {
+        console.error("Error while sending mail", err);
+      }
     },
-    socialProviders: {
-        google: {
-            prompt: 'select_account consent',
-            accessType: 'offline',
-            clientId: process.env.GOOGLE_CLIENT_ID as string,
-            clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
-        },
+  },
+  socialProviders: {
+    google: {
+      prompt: 'select_account consent',
+      accessType: 'offline',
+      clientId: process.env.GOOGLE_CLIENT_ID as string,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
     },
+  },
 });
