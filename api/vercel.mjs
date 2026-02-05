@@ -290,7 +290,6 @@ var transporter = nodemailer.createTransport({
 var isProd = process.env.NODE_ENV === "production";
 var auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL,
-  // e.g. https://skill-bridge-server-theta.vercel.app
   secret: process.env.BETTER_AUTH_SECRET,
   database: prismaAdapter(prisma, {
     provider: "postgresql"
@@ -298,7 +297,6 @@ var auth = betterAuth({
   }),
   trustedOrigins: [
     process.env.FRONTEND_URL,
-    // e.g. https://skill-bridge.vercel.app
     "http://localhost:3000"
   ].filter(Boolean),
   advanced: {
@@ -639,7 +637,27 @@ var getTutors = async (query) => {
             category: true
           }
         },
-        user: true
+        user: {
+          include: {
+            tutorReviews: {
+              where: {
+                isHidden: false
+              },
+              orderBy: { createdAt: "desc" },
+              take: 12,
+              include: {
+                student: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    image: true
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     });
     const total2 = await tx.tutorProfile.count({
@@ -669,6 +687,27 @@ var getTutorById = async (id) => {
       subjects: {
         include: {
           category: true
+        }
+      },
+      user: {
+        select: {
+          tutorReviews: {
+            where: {
+              isHidden: false
+            },
+            orderBy: { createdAt: "desc" },
+            take: 12,
+            include: {
+              student: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                  image: true
+                }
+              }
+            }
+          }
         }
       }
     }
@@ -1296,7 +1335,6 @@ var app = express5();
 app.set("trust proxy", 1);
 var allowedOrigins = [
   process.env.FRONTEND_URL,
-  // e.g. https://skill-bridge.vercel.app
   "http://localhost:3000"
 ].filter(Boolean);
 app.use(

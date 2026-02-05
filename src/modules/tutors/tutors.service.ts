@@ -100,13 +100,14 @@ const getTutors = async (query: Query) => {
                 },
                 {
                     user: {
+
                         OR: [
                             { name: { contains: search, mode: "insensitive" } },
                             { bio: { contains: search, mode: "insensitive" } },
                             { email: { contains: search, mode: "insensitive" } },
                         ],
                     },
-                },
+                }
             ],
         });
     }
@@ -126,7 +127,27 @@ const getTutors = async (query: Query) => {
                         category: true,
                     },
                 },
-                user: true,
+                user: {
+                    include: {
+                        tutorReviews: {
+                            where: {
+                                isHidden: false
+                            },
+                            orderBy: { createdAt: 'desc' },
+                            take: 12,
+                            include: {
+                                student: {
+                                    select: {
+                                        id: true,
+                                        name: true,
+                                        email: true,
+                                        image: true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             },
         });
 
@@ -161,6 +182,27 @@ const getTutorById = async (id: string) => {
             subjects: {
                 include: {
                     category: true
+                }
+            },
+            user: {
+                select: {
+                    tutorReviews: {
+                        where: {
+                            isHidden: false
+                        },
+                        orderBy: { createdAt: 'desc' },
+                        take: 12,
+                        include: {
+                            student: {
+                                select: {
+                                    id: true,
+                                    name: true,
+                                    email: true,
+                                    image: true
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
