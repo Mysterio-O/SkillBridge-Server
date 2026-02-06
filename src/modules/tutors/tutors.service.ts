@@ -1,17 +1,60 @@
 import { Prisma, TutorAvailability, TutorProfile, TutorProfileStatus, } from "../../../generated/prisma/client";
 import { TutorProfileWhereInput } from "../../../generated/prisma/models";
 import { prisma } from "../../lib/prisma";
+import { CreateTutorProfileInput } from "./tutor.types";
 
 
 type Query = Record<string, unknown>;
 
-const addTutor = async (payload: Omit<TutorProfile, 'id' | 'createdAt' | 'updatedAt'>, id: string) => {
-    const result = await prisma.tutorProfile.create({
-        data: {
-            ...payload,
-            userId: id
+
+const uniq = (arr: string[]) => Array.from(new Set(arr.map((x) => x.trim()).filter(Boolean)));
+
+export const addTutor = async (payload: any, userId: string) => {
+    const incoming = payload.subjectCategoryIds ?? payload.subjects ?? [];
+    const categoryIds = uniq(incoming);
+
+    const result = await prisma.$transaction(async (tx) => {
+        const tutor = await tx.tutorProfile.create({
+            data: {
+                userId,
+                headline: payload.headline?.trim() || null,
+                about: payload.about?.trim() || null,
+
+                hourlyRate: new Prisma.Decimal(payload.hourlyRate),
+                currency: payload.currency.trim().toUpperCase(),
+
+                yearsOfExperience: payload.yearsOfExperience ?? null,
+                languages: payload.languages,
+
+                education: payload.education?.trim() || null,
+                certification: payload.certification?.trim() || null,
+
+                sessionMode: payload.sessionMode,
+                meetingPlatform: payload.meetingPlatform,
+                timezone: payload.timezone?.trim() || null,
+                availability: payload.availability,
+            },
+            select: { id: true },
+        });
+
+        if (categoryIds.length) {
+            await tx.tutorSubjects.createMany({
+                data: categoryIds.map((categoryId: string) => ({
+                    tutorId: tutor.id,
+                    categoryId,
+                })),
+                skipDuplicates: true,
+            });
         }
+
+        return tx.tutorProfile.findUnique({
+            where: { id: tutor.id },
+            include: {
+                subjects: { include: { category: true } },
+            },
+        });
     });
+
     return result;
 };
 
@@ -113,7 +156,10 @@ const getTutors = async (query: Query) => {
     }
 
     const whereCondition: Prisma.TutorProfileWhereInput = {
-        AND: andConditions,
+        AND: [
+            { status: { notIn: ['cancelled', 'pending'] } },
+            ...andConditions
+        ],
     };
 
     const { tutors, total } = await prisma.$transaction(async (tx) => {
@@ -243,7 +289,93 @@ const updateAvailability = async (status: TutorAvailability, userId: string) => 
         }
     });
     return result;
-}
+};
+
+const getPendingApplications = async (query: Query) => {
+    const page = Number(query.page) || 1;
+    const limit = Number(query.limit) || 20;
+    const skip = (page - 1) * limit;
+    const search = String(query.search ?? "").trim() || undefined;
+
+    const andConditions: Prisma.TutorProfileWhereInput[] = [
+        { status: TutorProfileStatus.pending },
+    ];
+
+    if (search) {
+        andConditions.push({
+            OR: [
+                { headline: { contains: search, mode: "insensitive" } },
+                { about: { contains: search, mode: "insensitive" } },
+                {
+                    user: {
+                        OR: [
+                            { name: { contains: search, mode: "insensitive" } },
+                            { email: { contains: search, mode: "insensitive" } },
+                            { bio: { contains: search, mode: "insensitive" } },
+                        ],
+                    },
+                },
+                {
+                    subjects: {
+                        some: {
+                            category: {
+                                name: { contains: search, mode: "insensitive" },
+                            },
+                        },
+                    },
+                },
+            ],
+        });
+    }
+
+    const whereCondition: Prisma.TutorProfileWhereInput = {
+        AND: andConditions,
+    };
+
+    const { applications, total } = await prisma.$transaction(async (tx) => {
+        const applications = await tx.tutorProfile.findMany({
+            where: whereCondition,
+            take: limit,
+            skip,
+            orderBy: { createdAt: "desc" },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                        image: true,
+                        bio: true,
+                        createdAt: true,
+                    },
+                },
+                subjects: {
+                    include: {
+                        category: true,
+                    },
+                },
+            },
+        });
+
+        const total = await tx.tutorProfile.count({ where: whereCondition });
+
+        return { applications, total };
+    });
+
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+        meta: {
+            page,
+            limit,
+            total,
+            totalPages,
+            hasNext: page < totalPages,
+            hasPrev: page > 1,
+        },
+        data: applications,
+    };
+};
 
 
 export const tutorService = {
@@ -253,4 +385,5 @@ export const tutorService = {
     getTutorById,
     updateTutorProfile,
     updateAvailability,
+    getPendingApplications,
 }

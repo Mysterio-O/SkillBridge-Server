@@ -8,12 +8,12 @@ const addTutor = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const payload = req.body;
 
-        if (!payload) {
+        if (!payload?.id || !payload?.data) {
             return res.status(400).json({
                 success: false,
-                message: "tutor data not found"
-            })
-        };
+                message: "Invalid payload. Expected { id, data }",
+            });
+        }
 
         const { id, data } = payload;
 
@@ -77,9 +77,9 @@ const getTutors = async (req: Request, res: Response, next: NextFunction) => {
         return res.status(200).json({
             success: true,
             message: "tutors fetched",
-            data:{
-               meta:result.meta,
-               tutors:result.data 
+            data: {
+                meta: result.meta,
+                tutors: result.data
             },
         });
     } catch (e) {
@@ -159,7 +159,22 @@ const updateAvailability = async (req: Request, res: Response, next: NextFunctio
     catch (e) {
         next(e);
     }
-}
+};
+
+const getPendingApplications = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+
+    const result = await tutorService.getPendingApplications(req.query);
+
+    return res.status(200).json({
+      success: true,
+      message: "pending applications fetched",
+      ...result,
+    });
+  } catch (e) {
+    next(e);
+  }
+};
 
 export const tutorController = {
     addTutor,
@@ -168,4 +183,5 @@ export const tutorController = {
     getTutorById,
     updateTutorProfile,
     updateAvailability,
+    getPendingApplications,
 }

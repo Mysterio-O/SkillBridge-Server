@@ -266,6 +266,13 @@ var NullsOrder = {
 };
 var defineExtension = runtime2.Extensions.defineExtension;
 
+// generated/prisma/enums.ts
+var TutorProfileStatus = {
+  pending: "pending",
+  active: "active",
+  cancelled: "cancelled"
+};
+
 // generated/prisma/client.ts
 globalThis["__dirname"] = path.dirname(fileURLToPath(import.meta.url));
 var PrismaClient = getPrismaClientClass();
@@ -537,12 +544,44 @@ function notFound(req, res) {
 import express from "express";
 
 // src/modules/tutors/tutors.service.ts
-var addTutor = async (payload, id) => {
-  const result = await prisma.tutorProfile.create({
-    data: {
-      ...payload,
-      userId: id
+var uniq = (arr) => Array.from(new Set(arr.map((x) => x.trim()).filter(Boolean)));
+var addTutor = async (payload, userId) => {
+  const incoming = payload.subjectCategoryIds ?? payload.subjects ?? [];
+  const categoryIds = uniq(incoming);
+  const result = await prisma.$transaction(async (tx) => {
+    const tutor = await tx.tutorProfile.create({
+      data: {
+        userId,
+        headline: payload.headline?.trim() || null,
+        about: payload.about?.trim() || null,
+        hourlyRate: new prismaNamespace_exports.Decimal(payload.hourlyRate),
+        currency: payload.currency.trim().toUpperCase(),
+        yearsOfExperience: payload.yearsOfExperience ?? null,
+        languages: payload.languages,
+        education: payload.education?.trim() || null,
+        certification: payload.certification?.trim() || null,
+        sessionMode: payload.sessionMode,
+        meetingPlatform: payload.meetingPlatform,
+        timezone: payload.timezone?.trim() || null,
+        availability: payload.availability
+      },
+      select: { id: true }
+    });
+    if (categoryIds.length) {
+      await tx.tutorSubjects.createMany({
+        data: categoryIds.map((categoryId) => ({
+          tutorId: tutor.id,
+          categoryId
+        })),
+        skipDuplicates: true
+      });
     }
+    return tx.tutorProfile.findUnique({
+      where: { id: tutor.id },
+      include: {
+        subjects: { include: { category: true } }
+      }
+    });
   });
   return result;
 };
@@ -624,7 +663,10 @@ var getTutors = async (query) => {
     });
   }
   const whereCondition = {
-    AND: andConditions
+    AND: [
+      { status: { notIn: ["cancelled", "pending"] } },
+      ...andConditions
+    ]
   };
   const { tutors, total } = await prisma.$transaction(async (tx) => {
     const tutors2 = await tx.tutorProfile.findMany({
@@ -743,13 +785,91 @@ var updateAvailability = async (status, userId) => {
   });
   return result;
 };
+var getPendingApplications = async (query) => {
+  const page = Number(query.page) || 1;
+  const limit = Number(query.limit) || 20;
+  const skip = (page - 1) * limit;
+  const search = String(query.search ?? "").trim() || void 0;
+  const andConditions = [
+    { status: TutorProfileStatus.pending }
+  ];
+  if (search) {
+    andConditions.push({
+      OR: [
+        { headline: { contains: search, mode: "insensitive" } },
+        { about: { contains: search, mode: "insensitive" } },
+        {
+          user: {
+            OR: [
+              { name: { contains: search, mode: "insensitive" } },
+              { email: { contains: search, mode: "insensitive" } },
+              { bio: { contains: search, mode: "insensitive" } }
+            ]
+          }
+        },
+        {
+          subjects: {
+            some: {
+              category: {
+                name: { contains: search, mode: "insensitive" }
+              }
+            }
+          }
+        }
+      ]
+    });
+  }
+  const whereCondition = {
+    AND: andConditions
+  };
+  const { applications, total } = await prisma.$transaction(async (tx) => {
+    const applications2 = await tx.tutorProfile.findMany({
+      where: whereCondition,
+      take: limit,
+      skip,
+      orderBy: { createdAt: "desc" },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            image: true,
+            bio: true,
+            createdAt: true
+          }
+        },
+        subjects: {
+          include: {
+            category: true
+          }
+        }
+      }
+    });
+    const total2 = await tx.tutorProfile.count({ where: whereCondition });
+    return { applications: applications2, total: total2 };
+  });
+  const totalPages = Math.ceil(total / limit);
+  return {
+    meta: {
+      page,
+      limit,
+      total,
+      totalPages,
+      hasNext: page < totalPages,
+      hasPrev: page > 1
+    },
+    data: applications
+  };
+};
 var tutorService = {
   addTutor,
   updateTutorApplication,
   getTutors,
   getTutorById,
   updateTutorProfile,
-  updateAvailability
+  updateAvailability,
+  getPendingApplications
 };
 
 // src/middleware/auth.ts
@@ -794,13 +914,12 @@ var auth_default = auth2;
 var addTutor2 = async (req, res, next) => {
   try {
     const payload = req.body;
-    if (!payload) {
+    if (!payload?.id || !payload?.data) {
       return res.status(400).json({
         success: false,
-        message: "tutor data not found"
+        message: "Invalid payload. Expected { id, data }"
       });
     }
-    ;
     const { id, data } = payload;
     const result = await tutorService.addTutor(data, id);
     res.status(201).json({
@@ -910,19 +1029,33 @@ var updateAvailability2 = async (req, res, next) => {
     next(e);
   }
 };
+var getPendingApplications2 = async (req, res, next) => {
+  try {
+    const result = await tutorService.getPendingApplications(req.query);
+    return res.status(200).json({
+      success: true,
+      message: "pending applications fetched",
+      ...result
+    });
+  } catch (e) {
+    next(e);
+  }
+};
 var tutorController = {
   addTutor: addTutor2,
   updateTutorApplication: updateTutorApplication2,
   getTutors: getTutors2,
   getTutorById: getTutorById2,
   updateTutorProfile: updateTutorProfile2,
-  updateAvailability: updateAvailability2
+  updateAvailability: updateAvailability2,
+  getPendingApplications: getPendingApplications2
 };
 
 // src/modules/tutors/tutors.route.ts
 var router = express.Router();
 router.get("/", tutorController.getTutors);
 router.get("/:id", tutorController.getTutorById);
+router.get("/applications", auth_default("admin" /* ADMIN */), tutorController.getPendingApplications);
 router.post("/", tutorController.addTutor);
 router.put("/profile", auth_default("tutor" /* TUTOR */), tutorController.updateTutorProfile);
 router.put("/availability", auth_default("tutor" /* TUTOR */), tutorController.updateAvailability);

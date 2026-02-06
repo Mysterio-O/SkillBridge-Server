@@ -6,7 +6,9 @@ const router = express.Router();
 
 router.get("/", tutorController.getTutors);
 
-router.get("/:id", tutorController.getTutorById)
+router.get("/:id", tutorController.getTutorById);
+
+router.get('/applications', auth(UserRole.ADMIN), tutorController.getPendingApplications);
 
 router.post("/", tutorController.addTutor);
 
