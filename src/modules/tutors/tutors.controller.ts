@@ -40,6 +40,8 @@ const updateTutorApplication = async (req: Request, res: Response, next: NextFun
             message: 'application id is missing'
         });
 
+        // console.log(applicationId)
+
         if (!status) {
             return res.status(400).json({ success: false, message: "status is missing" });
         }
@@ -65,7 +67,7 @@ const updateTutorApplication = async (req: Request, res: Response, next: NextFun
 
     }
     catch (e) {
-        // console.log(e);
+        console.log(e);
         next(e);
     }
 };

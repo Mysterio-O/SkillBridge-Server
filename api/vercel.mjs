@@ -311,10 +311,12 @@ var auth = betterAuth({
     defaultCookieAttributes: isProd ? {
       sameSite: "none",
       secure: true,
-      partitioned: true
+      // partitioned: true,
+      path: "/"
     } : {
       sameSite: "lax",
-      secure: false
+      secure: false,
+      path: "/"
     }
   },
   user: {
@@ -1055,7 +1057,7 @@ var tutorController = {
 var router = express.Router();
 router.get("/", tutorController.getTutors);
 router.get("/:id", tutorController.getTutorById);
-router.get("/applications", auth_default("admin" /* ADMIN */), tutorController.getPendingApplications);
+router.get("/applications/pending", auth_default("admin" /* ADMIN */), tutorController.getPendingApplications);
 router.post("/", tutorController.addTutor);
 router.put("/profile", auth_default("tutor" /* TUTOR */), tutorController.updateTutorProfile);
 router.put("/availability", auth_default("tutor" /* TUTOR */), tutorController.updateAvailability);

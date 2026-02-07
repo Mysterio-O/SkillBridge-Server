@@ -47,9 +47,28 @@ const updateUser = async (req: Request, res: Response, next: NextFunction) => {
     catch (e) {
         next(e);
     }
+};
+
+
+const deleteTutorApplication = async (req: Request, res: Response, next: NextFunction) => {
+    console.log("stated");
+    try {
+        const { id } = req.params;
+        const result = await adminService.deleteTutorApplication(id as string);
+        res.status(204).json({
+            success: true,
+            message: "Application deleted successfully",
+            data: result
+        })
+    }
+    catch (e) {
+        console.log(e);
+        next(e);
+    }
 }
 
 export const adminController = {
     getUsers,
     updateUser,
+    deleteTutorApplication,
 }

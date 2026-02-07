@@ -6,6 +6,8 @@ const router = express.Router();
 
 router.get("/", auth(UserRole.ADMIN), adminController.getUsers);
 
-router.patch("/:id",auth(UserRole.ADMIN),adminController.updateUser);
+router.patch("/:id", auth(UserRole.ADMIN), adminController.updateUser);
+
+router.delete("/tutor-applications/:id", auth(UserRole.ADMIN), adminController.deleteTutorApplication);
 
 export const adminRouter = router;

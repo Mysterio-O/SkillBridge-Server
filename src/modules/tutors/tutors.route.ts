@@ -8,7 +8,7 @@ router.get("/", tutorController.getTutors);
 
 router.get("/:id", tutorController.getTutorById);
 
-router.get('/applications', auth(UserRole.ADMIN), tutorController.getPendingApplications);
+router.get('/applications/pending', auth(UserRole.ADMIN), tutorController.getPendingApplications);
 
 router.post("/", tutorController.addTutor);
 

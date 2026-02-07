@@ -32,11 +32,13 @@ export const auth = betterAuth({
       ? {
         sameSite: "none",
         secure: true,
-        partitioned: true,
+        // partitioned: true,
+        path:'/'
       }
       : {
         sameSite: "lax",
         secure: false,
+        path:'/'
       },
   },
   user: {

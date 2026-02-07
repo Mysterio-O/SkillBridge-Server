@@ -82,10 +82,21 @@ const updateUser = async (payload: UpdateUser) => {
         }
     });
     return result;
+};
+
+
+const deleteTutorApplication = async (id: string) => {
+    const result = await prisma.tutorProfile.delete({
+        where: {
+            id
+        }
+    });
+    return result
 }
 
 
 export const adminService = {
     getUsers,
     updateUser,
+    deleteTutorApplication,
 }
