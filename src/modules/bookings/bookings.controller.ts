@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { bookingService } from "./booking.service";
+import { success } from "better-auth/*";
 
 
 const createBooking = async (req: Request, res: Response, next: NextFunction) => {
@@ -10,7 +11,15 @@ const createBooking = async (req: Request, res: Response, next: NextFunction) =>
             message: 'booking data not found!',
         });
 
-        const { studentId, data } = payload;
+        const user = req.user;
+        if (!user) return res.status(401).json({
+            success: false,
+            message: "unauthorized"
+        });
+
+        const studentId = user.id
+
+        const data = payload;
 
         if (!studentId) return res.status(400).json({
             success: false,
@@ -20,7 +29,7 @@ const createBooking = async (req: Request, res: Response, next: NextFunction) =>
         const result = await bookingService.createBooking(studentId, data);
 
         res.status(201).json({
-            success: false,
+            success: true,
             message: "booking created successfully!",
             booking: result
         })
