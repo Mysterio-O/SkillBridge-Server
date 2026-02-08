@@ -1,6 +1,5 @@
 import { NextFunction, Request, Response } from "express";
 import { bookingService } from "./booking.service";
-import { success } from "better-auth/*";
 
 
 const createBooking = async (req: Request, res: Response, next: NextFunction) => {
@@ -50,13 +49,23 @@ const getBookings = async (req: Request, res: Response, next: NextFunction) => {
         });
 
         const userId = user.id;
+        const role = user.role
 
-        const result = await bookingService.getBookings(userId);
+        const page = Math.max(parseInt(String(req.query.page ?? "1"), 10) || 1, 1);
+        const page_size = Math.min(
+            Math.max(parseInt(String(req.query.page_size ?? "10"), 10) || 10, 1),
+            100
+        );
+
+        const searchRaw = String(req.query.search ?? "").trim();
+        const search = searchRaw.length > 0 ? searchRaw : undefined;
+
+        const result = await bookingService.getBookings(userId, { page, page_size, search, role });
 
         res.status(200).json({
             success: true,
-            message: result.length > 0 ? "All Bookings Retrieved!" : "No bookings created yet",
-            bookings: result
+            message: result.bookings.length > 0 ? "All Bookings Retrieved!" : "No bookings created yet",
+            data: result
         })
     }
     catch (e) {

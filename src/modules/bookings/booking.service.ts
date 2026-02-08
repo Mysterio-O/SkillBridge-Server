@@ -1,4 +1,5 @@
 import { Booking, Prisma } from "../../../generated/prisma/client";
+import { BookingWhereInput } from "../../../generated/prisma/models";
 import { prisma } from "../../lib/prisma";
 
 
@@ -12,6 +13,14 @@ type CreateBookingPayload = {
 
   topic?: string;
   meetingLink?: string;
+};
+
+
+type GetBookingsInput = {
+  page: number;
+  page_size: number;
+  search?: string | undefined;
+  role: string;
 };
 
 export const createBooking = async (studentUserId: string, payload: CreateBookingPayload) => {
@@ -60,37 +69,94 @@ export const createBooking = async (studentUserId: string, payload: CreateBookin
   return result;
 };
 
-const getBookings = async (id: string) => {
-  const result = await prisma.booking.findMany({
-    where: {
-      studentId: id
-    },
-    include: {
-      tutorProfile: {
-        include: {
-          subjects: true,
-          user: {
-            select: {
-              name: true,
-              email: true,
-              phone: true
-            }
-          }
-        }
-      },
-      student: {
-        select: {
-          name: true,
-          email: true,
-          phone: true
-        }
-      },
-      review: true
-    }
-  });
-  return result;
-}
+const getBookings = async (id: string, { page, page_size, search, role }: GetBookingsInput) => {
+  const skip = (page - 1) * page_size;
 
+
+  const where: BookingWhereInput = {};
+
+  if (role !== "admin") {
+    where.studentId = id;
+  }
+
+
+  if (search) {
+    where.OR = [
+      // student fields
+      { student: { name: { contains: search, mode: "insensitive" } } },
+      { student: { email: { contains: search, mode: "insensitive" } } },
+      { student: { phone: { contains: search, mode: "insensitive" } } },
+
+      // tutor user fields
+      {
+        tutorProfile: {
+          user: { name: { contains: search, mode: "insensitive" } },
+        },
+      },
+      {
+        tutorProfile: {
+          user: { email: { contains: search, mode: "insensitive" } },
+        },
+      },
+      {
+        tutorProfile: {
+          user: { phone: { contains: search, mode: "insensitive" } },
+        },
+      },
+    ];
+  }
+
+
+
+
+  const [total, bookings] = await prisma.$transaction([
+    prisma.booking.count({
+      where,
+    }),
+    prisma.booking.findMany({
+      where,
+      include: {
+        tutorProfile: {
+          include: {
+            subjects: true,
+            user: {
+              select: {
+                name: true,
+                email: true,
+                phone: true,
+              },
+            },
+          },
+        },
+        student: {
+          select: {
+            name: true,
+            email: true,
+            phone: true,
+          },
+        },
+        review: true,
+      },
+      skip,
+      take: page_size,
+      orderBy: {
+        createdAt: "desc",
+      },
+    }),
+  ]);
+
+  return {
+    bookings,
+    pagination: {
+      page,
+      page_size,
+      total,
+      totalPages: Math.ceil(total / page_size),
+      hasNext: page * page_size < total,
+      hasPrev: page > 1,
+    },
+  };
+};
 
 const getBooking = async (bookingId: string) => {
   const booking = await prisma.booking.findUniqueOrThrow({

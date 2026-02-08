@@ -957,6 +957,7 @@ var updateTutorApplication2 = async (req, res, next) => {
       result
     });
   } catch (e) {
+    console.log(e);
     next(e);
   }
 };
@@ -1230,14 +1231,20 @@ var createBooking2 = async (req, res, next) => {
       success: false,
       message: "booking data not found!"
     });
-    const { studentId, data } = payload;
+    const user = req.user;
+    if (!user) return res.status(401).json({
+      success: false,
+      message: "unauthorized"
+    });
+    const studentId = user.id;
+    const data = payload;
     if (!studentId) return res.status(400).json({
       success: false,
       message: "student id missing"
     });
     const result = await bookingService.createBooking(studentId, data);
     res.status(201).json({
-      success: false,
+      success: true,
       message: "booking created successfully!",
       booking: result
     });
@@ -1410,9 +1417,18 @@ var updateUser = async (payload) => {
   });
   return result;
 };
+var deleteTutorApplication = async (id) => {
+  const result = await prisma.tutorProfile.delete({
+    where: {
+      id
+    }
+  });
+  return result;
+};
 var adminService = {
   getUsers,
-  updateUser
+  updateUser,
+  deleteTutorApplication
 };
 
 // src/modules/admin/admin.controller.ts
@@ -1453,15 +1469,32 @@ var updateUser2 = async (req, res, next) => {
     next(e);
   }
 };
+var deleteTutorApplication2 = async (req, res, next) => {
+  console.log("stated");
+  try {
+    const { id } = req.params;
+    const result = await adminService.deleteTutorApplication(id);
+    res.status(204).json({
+      success: true,
+      message: "Application deleted successfully",
+      data: result
+    });
+  } catch (e) {
+    console.log(e);
+    next(e);
+  }
+};
 var adminController = {
   getUsers: getUsers2,
-  updateUser: updateUser2
+  updateUser: updateUser2,
+  deleteTutorApplication: deleteTutorApplication2
 };
 
 // src/modules/admin/admin.route.ts
 var router5 = express4.Router();
 router5.get("/", auth_default("admin" /* ADMIN */), adminController.getUsers);
 router5.patch("/:id", auth_default("admin" /* ADMIN */), adminController.updateUser);
+router5.delete("/tutor-applications/:id", auth_default("admin" /* ADMIN */), adminController.deleteTutorApplication);
 var adminRouter = router5;
 
 // src/app.ts
