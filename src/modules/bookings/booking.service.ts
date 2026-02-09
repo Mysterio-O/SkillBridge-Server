@@ -1,6 +1,7 @@
-import { Booking, Prisma } from "../../../generated/prisma/client";
+import { Booking, BookingStatus, Prisma } from "../../../generated/prisma/client";
 import { BookingWhereInput } from "../../../generated/prisma/models";
 import { prisma } from "../../lib/prisma";
+import { CancelPayload } from "./booking.types";
 
 
 type CreateBookingPayload = {
@@ -24,7 +25,6 @@ type GetBookingsInput = {
 };
 
 export const createBooking = async (studentUserId: string, payload: CreateBookingPayload) => {
-  // 1) Find tutor profile (because payload gives tutorProfileId)
   const tutorProfile = await prisma.tutorProfile.findUnique({
     where: { id: payload.tutorProfileId },
     select: {
@@ -54,6 +54,8 @@ export const createBooking = async (studentUserId: string, payload: CreateBookin
     hourlyRateSnapshot: hourly,
     totalPrice: total,
     currency: tutorProfile.currency,
+
+    status:'confirmed',
 
     student: { connect: { id: studentUserId } },
     tutorProfile: { connect: { id: payload.tutorProfileId } }
@@ -121,6 +123,7 @@ const getBookings = async (id: string, { page, page_size, search, role }: GetBoo
             subjects: true,
             user: {
               select: {
+                id:true,
                 name: true,
                 email: true,
                 phone: true,
@@ -181,6 +184,41 @@ const getBooking = async (bookingId: string) => {
   });
 
   return booking
+};
+
+
+const updateBookingStatus = async (bookingId: string, status: BookingStatus, cancelPayload?: CancelPayload) => {
+
+  let data = {};
+
+  if (status === 'cancelled') {
+    data = {
+      status,
+      cancelledBy: cancelPayload?.cancelledBy,
+      cancelReason: cancelPayload?.cancelReason || null
+    }
+  }
+
+  if (status === 'completed') {
+    data = {
+      status,
+      completedAt: new Date().toISOString()
+    }
+  }
+
+  if (status === 'in_progress') {
+    data = { status }
+  }
+
+  const result = await prisma.booking.update({
+    where: {
+      id: bookingId
+    },
+    data
+  });
+
+  return result;
+
 }
 
 
@@ -189,4 +227,5 @@ export const bookingService = {
   createBooking,
   getBookings,
   getBooking,
+  updateBookingStatus,
 }

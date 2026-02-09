@@ -1,5 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { bookingService } from "./booking.service";
+import { BookingStatus } from "../../../generated/prisma/enums";
+import { CancelPayload } from "./booking.types";
 
 
 const createBooking = async (req: Request, res: Response, next: NextFunction) => {
@@ -108,10 +110,55 @@ const getBooking = async (req: Request, res: Response, next: NextFunction) => {
 }
 
 
+const updateBookingStatus = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const status: BookingStatus = req.body.status;
+        const cancelReason = req.body?.cancelReason;
+
+        const { id } = req.params;
+
+        if (!id) return res.status(400).json({
+            success: false,
+            message: "Booking id not found"
+        })
+
+        if (!status) return res.status(400).json({
+            success: false,
+            message: "status missing"
+        });
+
+        const user = req.user;
+        if (!user) return res.status(401).json({
+            success: false,
+            message: 'unauthorized'
+        });
+
+        const cancelPayload =
+            status === "cancelled" ? {
+                cancelledBy: user.id,
+                cancelReason: cancelReason || null,
+            }
+                : undefined;
+
+        const result = await bookingService.updateBookingStatus(id as string, status, cancelPayload);
+
+        res.status(200).json({
+            success: true,
+            message: `Booking status updated to: ${status}`,
+            data: result
+        })
+
+    }
+    catch (e) {
+        next(e);
+    }
+}
+
 
 export const bookingController = {
     createBooking,
     getBookings,
     getBooking,
+    updateBookingStatus,
 }
 

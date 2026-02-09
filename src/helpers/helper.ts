@@ -7,3 +7,10 @@ export function toNumber(v: unknown) {
   const n = Number(v);
   return Number.isFinite(n) ? n : undefined;
 }
+
+
+export function httpError(status: number, message: string) {
+  const err: any = new Error(message);
+  err.status = status;
+  return err;
+}

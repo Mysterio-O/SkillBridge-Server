@@ -12,4 +12,6 @@ router.get("/:id", auth(UserRole.ADMIN, UserRole.STUDENT), bookingController.get
 
 router.post("/", auth(UserRole.STUDENT, UserRole.ADMIN), bookingController.createBooking);
 
+router.patch("/:id", auth(UserRole.STUDENT, UserRole.TUTOR), bookingController.updateBookingStatus);
+
 export const bookingRouter = router;

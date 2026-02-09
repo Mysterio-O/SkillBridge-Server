@@ -14,6 +14,7 @@ import { categoriesRouter } from "./modules/categories/categories.route";
 import { bookingRouter } from "./modules/bookings/bookings.route";
 import { authRouter } from "./modules/auth/auth.route";
 import { adminRouter } from "./modules/admin/admin.route";
+import { reviewsRouter } from "./modules/reviews/reviews.route";
 
 const app: Application = express();
 
@@ -47,6 +48,7 @@ app.use("/api/authentication", authRouter);
 app.use("/api/tutor", tutorRouter);
 app.use("/api/categories", categoriesRouter);
 app.use("/api/bookings", bookingRouter);
+app.use('/api/review',reviewsRouter);
 
 app.use(errorHandler);
 app.use(notFound);
