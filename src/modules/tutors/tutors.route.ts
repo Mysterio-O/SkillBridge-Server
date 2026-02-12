@@ -6,11 +6,13 @@ const router = express.Router();
 
 router.get("/", tutorController.getTutors);
 
-router.get("/:id", tutorController.getTutorById);
+router.get("/id", tutorController.getTutorById);
 
 router.get('/applications/pending', auth(UserRole.ADMIN), tutorController.getPendingApplications);
 
 router.post("/", tutorController.addTutor);
+
+router.get("/profile", auth(UserRole.TUTOR), tutorController.getTutorProfileOwn);
 
 router.put("/profile", auth(UserRole.TUTOR), tutorController.updateTutorProfile);
 

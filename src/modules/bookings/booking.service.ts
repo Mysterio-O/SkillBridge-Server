@@ -24,7 +24,7 @@ type GetBookingsInput = {
   role: string;
 };
 
-export const createBooking = async (studentUserId: string, payload: CreateBookingPayload) => {
+const createBooking = async (studentUserId: string, payload: CreateBookingPayload) => {
   const tutorProfile = await prisma.tutorProfile.findUnique({
     where: { id: payload.tutorProfileId },
     select: {
@@ -55,7 +55,7 @@ export const createBooking = async (studentUserId: string, payload: CreateBookin
     totalPrice: total,
     currency: tutorProfile.currency,
 
-    status:'confirmed',
+    status: 'confirmed',
 
     student: { connect: { id: studentUserId } },
     tutorProfile: { connect: { id: payload.tutorProfileId } }
@@ -71,14 +71,19 @@ export const createBooking = async (studentUserId: string, payload: CreateBookin
   return result;
 };
 
-const getBookings = async (id: string, { page, page_size, search, role }: GetBookingsInput) => {
+const getBookings = async (userId: string, { page, page_size, search, role }: GetBookingsInput) => {
   const skip = (page - 1) * page_size;
 
-
   const where: BookingWhereInput = {};
+  // console.log('started');
 
-  if (role !== "admin") {
-    where.studentId = id;
+  if (role === "student") {
+    where.studentId = userId;
+  } else if (role === "tutor") {
+    where.tutorProfile = { userId };
+  } else if (role === "admin") {
+  } else {
+    where.studentId = userId;
   }
 
 
@@ -89,32 +94,15 @@ const getBookings = async (id: string, { page, page_size, search, role }: GetBoo
       { student: { email: { contains: search, mode: "insensitive" } } },
       { student: { phone: { contains: search, mode: "insensitive" } } },
 
-      // tutor user fields
-      {
-        tutorProfile: {
-          user: { name: { contains: search, mode: "insensitive" } },
-        },
-      },
-      {
-        tutorProfile: {
-          user: { email: { contains: search, mode: "insensitive" } },
-        },
-      },
-      {
-        tutorProfile: {
-          user: { phone: { contains: search, mode: "insensitive" } },
-        },
-      },
+      // tutor fields
+      { tutorProfile: { user: { name: { contains: search, mode: "insensitive" } } } },
+      { tutorProfile: { user: { email: { contains: search, mode: "insensitive" } } } },
+      { tutorProfile: { user: { phone: { contains: search, mode: "insensitive" } } } },
     ];
   }
 
-
-
-
   const [total, bookings] = await prisma.$transaction([
-    prisma.booking.count({
-      where,
-    }),
+    prisma.booking.count({ where }),
     prisma.booking.findMany({
       where,
       include: {
@@ -123,7 +111,7 @@ const getBookings = async (id: string, { page, page_size, search, role }: GetBoo
             subjects: true,
             user: {
               select: {
-                id:true,
+                id: true,
                 name: true,
                 email: true,
                 phone: true,
@@ -133,6 +121,7 @@ const getBookings = async (id: string, { page, page_size, search, role }: GetBoo
         },
         student: {
           select: {
+            id: true,
             name: true,
             email: true,
             phone: true,
@@ -142,9 +131,7 @@ const getBookings = async (id: string, { page, page_size, search, role }: GetBoo
       },
       skip,
       take: page_size,
-      orderBy: {
-        createdAt: "desc",
-      },
+      orderBy: { createdAt: "desc" },
     }),
   ]);
 
@@ -199,6 +186,12 @@ const updateBookingStatus = async (bookingId: string, status: BookingStatus, can
     }
   }
 
+  if (status === 'confirmed') {
+    data = {
+      status
+    }
+  }
+
   if (status === 'completed') {
     data = {
       status,
@@ -216,6 +209,8 @@ const updateBookingStatus = async (bookingId: string, status: BookingStatus, can
     },
     data
   });
+
+  console.log(result, status);
 
   return result;
 

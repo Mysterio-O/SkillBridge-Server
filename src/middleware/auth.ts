@@ -58,6 +58,8 @@ const auth = (...roles: UserRole[]) => {
             })
         }
 
+        console.log('middleware',req.user)
+
         next()
     }
 }

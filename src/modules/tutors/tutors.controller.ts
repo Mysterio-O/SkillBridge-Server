@@ -128,6 +128,7 @@ const updateTutorProfile = async (req: Request, res: Response, next: NextFunctio
 
     }
     catch (e) {
+        console.log(e)
         next(e);
     }
 };
@@ -159,24 +160,48 @@ const updateAvailability = async (req: Request, res: Response, next: NextFunctio
 
     }
     catch (e) {
+        console.log(e)
         next(e);
     }
 };
 
 const getPendingApplications = async (req: Request, res: Response, next: NextFunction) => {
-  try {
+    try {
 
-    const result = await tutorService.getPendingApplications(req.query);
+        const result = await tutorService.getPendingApplications(req.query);
 
-    return res.status(200).json({
-      success: true,
-      message: "pending applications fetched",
-      ...result,
-    });
-  } catch (e) {
-    next(e);
-  }
+        return res.status(200).json({
+            success: true,
+            message: "pending applications fetched",
+            ...result,
+        });
+    } catch (e) {
+        next(e);
+    }
 };
+
+const getTutorProfileOwn = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const user = req.user;
+        if (!user) return res.status(401).json({
+            success: false,
+            message: "unauthorized"
+        });
+
+        const result = await tutorService.getTutorProfileOwn(user.id);
+
+        res.status(200).json({
+            success: true,
+            message: "Retrieved tutor profile",
+            data: result
+        })
+
+    }
+    catch (e) {
+        console.log(e)
+        next(e)
+    }
+}
 
 export const tutorController = {
     addTutor,
@@ -186,4 +211,5 @@ export const tutorController = {
     updateTutorProfile,
     updateAvailability,
     getPendingApplications,
+    getTutorProfileOwn,
 }

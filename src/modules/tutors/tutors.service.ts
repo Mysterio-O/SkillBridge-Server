@@ -377,6 +377,15 @@ const getPendingApplications = async (query: Query) => {
     };
 };
 
+const getTutorProfileOwn = async (id: string) => {
+    const result = await prisma.tutorProfile.findUniqueOrThrow({
+        where: {
+            userId: id
+        }
+    });
+    return result;
+}
+
 
 export const tutorService = {
     addTutor,
@@ -386,4 +395,5 @@ export const tutorService = {
     updateTutorProfile,
     updateAvailability,
     getPendingApplications,
+    getTutorProfileOwn,
 }

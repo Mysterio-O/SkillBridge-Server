@@ -6,7 +6,7 @@ var __export = (target, all) => {
 
 // src/app.ts
 import * as dotenv from "dotenv";
-import express5 from "express";
+import express6 from "express";
 import cors from "cors";
 import { toNodeHandler } from "better-auth/node";
 
@@ -304,7 +304,8 @@ var auth = betterAuth({
   }),
   trustedOrigins: [
     process.env.FRONTEND_URL,
-    "http://localhost:3000"
+    "http://localhost:3000",
+    "https://skill-bridge-client.netlify.app"
   ].filter(Boolean),
   advanced: {
     useSecureCookies: isProd,
@@ -1155,6 +1156,7 @@ var createBooking = async (studentUserId, payload) => {
     hourlyRateSnapshot: hourly,
     totalPrice: total,
     currency: tutorProfile.currency,
+    status: "confirmed",
     student: { connect: { id: studentUserId } },
     tutorProfile: { connect: { id: payload.tutorProfileId } }
   };
@@ -1164,35 +1166,73 @@ var createBooking = async (studentUserId, payload) => {
   const result = await prisma.booking.create({ data });
   return result;
 };
-var getBookings = async (id) => {
-  const result = await prisma.booking.findMany({
-    where: {
-      studentId: id
-    },
-    include: {
-      tutorProfile: {
-        include: {
-          subjects: true,
-          user: {
-            select: {
-              name: true,
-              email: true,
-              phone: true
+var getBookings = async (userId, { page, page_size, search, role }) => {
+  const skip = (page - 1) * page_size;
+  const where = {};
+  if (role === "student") {
+    where.studentId = userId;
+  } else if (role === "tutor") {
+    where.tutorProfile = { userId };
+  } else if (role === "admin") {
+  } else {
+    where.studentId = userId;
+  }
+  if (search) {
+    where.OR = [
+      // student fields
+      { student: { name: { contains: search, mode: "insensitive" } } },
+      { student: { email: { contains: search, mode: "insensitive" } } },
+      { student: { phone: { contains: search, mode: "insensitive" } } },
+      // tutor fields
+      { tutorProfile: { user: { name: { contains: search, mode: "insensitive" } } } },
+      { tutorProfile: { user: { email: { contains: search, mode: "insensitive" } } } },
+      { tutorProfile: { user: { phone: { contains: search, mode: "insensitive" } } } }
+    ];
+  }
+  const [total, bookings] = await prisma.$transaction([
+    prisma.booking.count({ where }),
+    prisma.booking.findMany({
+      where,
+      include: {
+        tutorProfile: {
+          include: {
+            subjects: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                phone: true
+              }
             }
           }
-        }
+        },
+        student: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true
+          }
+        },
+        review: true
       },
-      student: {
-        select: {
-          name: true,
-          email: true,
-          phone: true
-        }
-      },
-      review: true
+      skip,
+      take: page_size,
+      orderBy: { createdAt: "desc" }
+    })
+  ]);
+  return {
+    bookings,
+    pagination: {
+      page,
+      page_size,
+      total,
+      totalPages: Math.ceil(total / page_size),
+      hasNext: page * page_size < total,
+      hasPrev: page > 1
     }
-  });
-  return result;
+  };
 };
 var getBooking = async (bookingId) => {
   const booking = await prisma.booking.findUniqueOrThrow({
@@ -1217,10 +1257,43 @@ var getBooking = async (bookingId) => {
   });
   return booking;
 };
+var updateBookingStatus = async (bookingId, status, cancelPayload) => {
+  let data = {};
+  if (status === "cancelled") {
+    data = {
+      status,
+      cancelledBy: cancelPayload?.cancelledBy,
+      cancelReason: cancelPayload?.cancelReason || null
+    };
+  }
+  if (status === "confirmed") {
+    data = {
+      status
+    };
+  }
+  if (status === "completed") {
+    data = {
+      status,
+      completedAt: (/* @__PURE__ */ new Date()).toISOString()
+    };
+  }
+  if (status === "in_progress") {
+    data = { status };
+  }
+  const result = await prisma.booking.update({
+    where: {
+      id: bookingId
+    },
+    data
+  });
+  console.log(result, status);
+  return result;
+};
 var bookingService = {
   createBooking,
   getBookings,
-  getBooking
+  getBooking,
+  updateBookingStatus
 };
 
 // src/modules/bookings/bookings.controller.ts
@@ -1261,11 +1334,19 @@ var getBookings2 = async (req, res, next) => {
       message: "unauthorized"
     });
     const userId = user.id;
-    const result = await bookingService.getBookings(userId);
+    const role = user.role;
+    const page = Math.max(parseInt(String(req.query.page ?? "1"), 10) || 1, 1);
+    const page_size = Math.min(
+      Math.max(parseInt(String(req.query.page_size ?? "10"), 10) || 10, 1),
+      100
+    );
+    const searchRaw = String(req.query.search ?? "").trim();
+    const search = searchRaw.length > 0 ? searchRaw : void 0;
+    const result = await bookingService.getBookings(userId, { page, page_size, search, role });
     res.status(200).json({
       success: true,
-      message: result.length > 0 ? "All Bookings Retrieved!" : "No bookings created yet",
-      bookings: result
+      message: result.bookings.length > 0 ? "All Bookings Retrieved!" : "No bookings created yet",
+      data: result
     });
   } catch (e) {
     next(e);
@@ -1298,17 +1379,51 @@ var getBooking2 = async (req, res, next) => {
     next(e);
   }
 };
+var updateBookingStatus2 = async (req, res, next) => {
+  try {
+    const status = req.body.status;
+    const cancelReason = req.body?.cancelReason;
+    const { id } = req.params;
+    if (!id) return res.status(400).json({
+      success: false,
+      message: "Booking id not found"
+    });
+    if (!status) return res.status(400).json({
+      success: false,
+      message: "status missing"
+    });
+    const user = req.user;
+    if (!user) return res.status(401).json({
+      success: false,
+      message: "unauthorized"
+    });
+    const cancelPayload = status === "cancelled" ? {
+      cancelledBy: user.id,
+      cancelReason: cancelReason || null
+    } : void 0;
+    const result = await bookingService.updateBookingStatus(id, status, cancelPayload);
+    res.status(200).json({
+      success: true,
+      message: `Booking status updated to: ${status}`,
+      data: result
+    });
+  } catch (e) {
+    next(e);
+  }
+};
 var bookingController = {
   createBooking: createBooking2,
   getBookings: getBookings2,
-  getBooking: getBooking2
+  getBooking: getBooking2,
+  updateBookingStatus: updateBookingStatus2
 };
 
 // src/modules/bookings/bookings.route.ts
 var router3 = express2.Router();
-router3.get("/", auth_default("admin" /* ADMIN */, "student" /* STUDENT */), bookingController.getBookings);
+router3.get("/", auth_default("admin" /* ADMIN */, "student" /* STUDENT */, "tutor" /* TUTOR */), bookingController.getBookings);
 router3.get("/:id", auth_default("admin" /* ADMIN */, "student" /* STUDENT */), bookingController.getBooking);
 router3.post("/", auth_default("student" /* STUDENT */, "admin" /* ADMIN */), bookingController.createBooking);
+router3.patch("/:id", auth_default("student" /* STUDENT */, "tutor" /* TUTOR */), bookingController.updateBookingStatus);
 var bookingRouter = router3;
 
 // src/modules/auth/auth.route.ts
@@ -1497,13 +1612,104 @@ router5.patch("/:id", auth_default("admin" /* ADMIN */), adminController.updateU
 router5.delete("/tutor-applications/:id", auth_default("admin" /* ADMIN */), adminController.deleteTutorApplication);
 var adminRouter = router5;
 
+// src/modules/reviews/reviews.route.ts
+import express5 from "express";
+
+// src/helpers/helper.ts
+function httpError(status, message) {
+  const err = new Error(message);
+  err.status = status;
+  return err;
+}
+
+// src/modules/reviews/reviews.service.ts
+var postReview = async ({ bookingId, rating, comment, studentId, tutorId }) => {
+  if (!bookingId) throw httpError(400, "bookingId is required");
+  if (typeof rating !== "number") throw httpError(400, "rating is required");
+  if (rating < 1 || rating > 5) throw httpError(400, "rating must be between 1 and 5");
+  if (comment != null && typeof comment !== "string") throw httpError(400, "comment must be a string");
+  const booking = await prisma.booking.findUnique({
+    where: { id: bookingId },
+    select: {
+      id: true,
+      studentId: true,
+      tutorProfileId: true,
+      status: true
+    }
+  });
+  if (!booking) throw httpError(404, "Booking not found");
+  if (booking.studentId !== studentId) {
+    throw httpError(403, "You can only review your own booking");
+  }
+  if (booking.status && booking.status !== "completed") {
+    throw httpError(400, "You can only review a completed booking");
+  }
+  try {
+    const review = await prisma.review.create({
+      data: {
+        bookingId: booking.id,
+        studentId,
+        tutorId,
+        rating,
+        comment: comment?.trim() || null
+      }
+    });
+    return review;
+  } catch (e) {
+    console.log(e);
+    if (e instanceof prismaNamespace_exports.PrismaClientKnownRequestError) {
+      if (e.code === "P2002") {
+        throw httpError(409, "A review for this booking already exists");
+      }
+    }
+    throw e;
+  }
+};
+var reviewsService = {
+  postReview
+};
+
+// src/modules/reviews/reviews.controller.ts
+var postReview2 = async (req, res, next) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+    const { bookingId, rating, comment, tutorId } = req.body;
+    const review = await reviewsService.postReview({
+      tutorId,
+      bookingId,
+      rating,
+      comment,
+      studentId: userId
+    });
+    return res.status(201).json({
+      success: true,
+      message: "Review submitted successfully",
+      data: { review }
+    });
+  } catch (e) {
+    next(e);
+  }
+};
+var reviewsController = {
+  postReview: postReview2
+};
+
+// src/modules/reviews/reviews.route.ts
+var router6 = express5.Router();
+router6.post("/", auth_default("student" /* STUDENT */, "admin" /* ADMIN */), reviewsController.postReview);
+var reviewsRouter = router6;
+
 // src/app.ts
 dotenv.config();
-var app = express5();
+var app = express6();
 app.set("trust proxy", 1);
 var allowedOrigins = [
   process.env.FRONTEND_URL,
-  "http://localhost:3000"
+  "http://localhost:3000",
+  "https://skill-bridge-client.netlify.app"
 ].filter(Boolean);
 app.use(
   cors({
@@ -1514,7 +1720,7 @@ app.use(
   })
 );
 app.all("/api/auth/*any", toNodeHandler(auth));
-app.use(express5.json());
+app.use(express6.json());
 app.get("/", async (req, res) => {
   res.send("Hello World");
 });
@@ -1523,6 +1729,7 @@ app.use("/api/authentication", authRouter);
 app.use("/api/tutor", tutorRouter);
 app.use("/api/categories", categoriesRouter);
 app.use("/api/bookings", bookingRouter);
+app.use("/api/review", reviewsRouter);
 app.use(globalErrorHandler_default);
 app.use(notFound);
 var app_default = app;

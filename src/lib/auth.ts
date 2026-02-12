@@ -25,6 +25,7 @@ export const auth = betterAuth({
   trustedOrigins: [
     process.env.FRONTEND_URL,
     "http://localhost:3000",
+    "https://skill-bridge-client.netlify.app"
   ].filter(Boolean) as string[],
   advanced: {
     useSecureCookies: isProd,

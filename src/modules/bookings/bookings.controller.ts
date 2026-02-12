@@ -45,6 +45,7 @@ const createBooking = async (req: Request, res: Response, next: NextFunction) =>
 const getBookings = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const user = req.user;
+        // console.log(user)
         if (!user) return res.status(401).json({
             success: false,
             message: "unauthorized"
