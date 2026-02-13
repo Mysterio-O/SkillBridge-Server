@@ -232,6 +232,7 @@ const getTutorById = async (id: string) => {
             },
             user: {
                 select: {
+                    name:true,
                     tutorReviews: {
                         where: {
                             isHidden: false
@@ -378,11 +379,14 @@ const getPendingApplications = async (query: Query) => {
 };
 
 const getTutorProfileOwn = async (id: string) => {
-    const result = await prisma.tutorProfile.findUniqueOrThrow({
+    console.log('service')
+    const result = await prisma.tutorProfile.findUnique({
         where: {
             userId: id
-        }
+        },
+        include:{subjects:true}
     });
+    // console.log(result)
     return result;
 }
 

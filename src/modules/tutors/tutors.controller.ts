@@ -93,8 +93,9 @@ const getTutors = async (req: Request, res: Response, next: NextFunction) => {
 const getTutorById = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { id } = req.params;
+        // console.log('started');
         const result = await tutorService.getTutorById(id as string);
-
+        // console.log(result);
         return res.status(200).json({
             success: true,
             message: "tutor fetched",
@@ -182,13 +183,15 @@ const getPendingApplications = async (req: Request, res: Response, next: NextFun
 
 const getTutorProfileOwn = async (req: Request, res: Response, next: NextFunction) => {
     try {
+        // console.log('started')
         const user = req.user;
         if (!user) return res.status(401).json({
             success: false,
             message: "unauthorized"
         });
-
         const result = await tutorService.getTutorProfileOwn(user.id);
+
+        // console.log(result)
 
         res.status(200).json({
             success: true,
@@ -198,7 +201,7 @@ const getTutorProfileOwn = async (req: Request, res: Response, next: NextFunctio
 
     }
     catch (e) {
-        console.log(e)
+        // console.log(e)
         next(e)
     }
 }

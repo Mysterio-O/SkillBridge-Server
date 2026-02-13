@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { reviewsService } from "./reviews.service";
+import { success } from "better-auth/*";
 
 
 const postReview = async (req: Request, res: Response, next: NextFunction) => {
@@ -35,7 +36,34 @@ const postReview = async (req: Request, res: Response, next: NextFunction) => {
 }
 
 
+const getReviews = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const user = req.user;
+        if (!user) return res.status(401).json({
+            success: false,
+            message: "unauthorized"
+        });
+
+        const id = user.id;
+
+        const result = await reviewsService.getReviews(id);
+
+        res.status(200).json({
+            success: true,
+            message: "All reviews retrieved",
+            data: result
+        })
+
+    }
+    catch (e) {
+        console.log(e);
+        next(e);
+    }
+}
+
+
 
 export const reviewsController = {
     postReview,
+    getReviews,
 }

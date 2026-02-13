@@ -65,6 +65,31 @@ const postReview = async ({ bookingId, rating, comment, studentId, tutorId }: Po
 };
 
 
+const getReviews = async (id: string) => {
+    return prisma.review.findMany({
+        where: {
+            tutorId: id
+        },
+        include:{
+            student:{
+                select:{
+                    name:true,
+                    email:true,
+                }
+            },
+            booking:{
+                select:{
+                    id:true,
+                    completedAt:true,
+                    durationMinutes:true,
+                }
+            }
+        }
+    })
+}
+
+
 export const reviewsService = {
     postReview,
+    getReviews,
 }

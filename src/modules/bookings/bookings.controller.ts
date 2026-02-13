@@ -93,7 +93,7 @@ const getBooking = async (req: Request, res: Response, next: NextFunction) => {
 
         const result = await bookingService.getBooking(bookingId as string);
 
-        if (result.studentId !== user.id) return res.status(401).json({
+        if (result.studentId !== user.id || result.tutorProfileId !== user.id || user.role !== 'admin') return res.status(401).json({
             success: false,
             message: "unauthorized access"
         })

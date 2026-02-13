@@ -6,7 +6,6 @@ const router = express.Router();
 
 router.get("/", tutorController.getTutors);
 
-router.get("/id", tutorController.getTutorById);
 
 router.get('/applications/pending', auth(UserRole.ADMIN), tutorController.getPendingApplications);
 
@@ -18,6 +17,7 @@ router.put("/profile", auth(UserRole.TUTOR), tutorController.updateTutorProfile)
 
 router.put("/availability", auth(UserRole.TUTOR), tutorController.updateAvailability);
 
+router.get("/:id", tutorController.getTutorById);
 router.patch("/:id/update", auth(UserRole.ADMIN), tutorController.updateTutorApplication);
 
 
