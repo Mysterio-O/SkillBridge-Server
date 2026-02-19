@@ -16,6 +16,7 @@ import { authRouter } from "./modules/auth/auth.route";
 import { adminRouter } from "./modules/admin/admin.route";
 import { reviewsRouter } from "./modules/reviews/reviews.route";
 import { dashboardRouter } from "./modules/dashboard/dashboard.route";
+import { userRouter } from "./modules/users/users.route";
 
 const app: Application = express();
 
@@ -52,6 +53,7 @@ app.use("/api/categories", categoriesRouter);
 app.use("/api/bookings", bookingRouter);
 app.use('/api/review', reviewsRouter);
 app.use("/api/dashboard", dashboardRouter);
+app.use("/api/users", userRouter);
 
 app.use(errorHandler);
 app.use(notFound);
