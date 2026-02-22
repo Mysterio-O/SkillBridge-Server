@@ -1,11 +1,11 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 
+// Log presence of JWT secret at startup (do not print secret value)
+console.log("JWT secret present:", Boolean(process.env.JWT_SECRET || process.env.BETTER_AUTH_SECRET));
+
 import express, { Application } from "express";
 import cors from "cors";
-import { toNodeHandler } from "better-auth/node";
-
-import { auth } from "./lib/auth";
 import errorHandler from "./middleware/globalErrorHandler";
 import { notFound } from "./middleware/notFound";
 
@@ -37,8 +37,6 @@ app.use(
   })
 );
 
-
-app.all("/api/auth/*any", toNodeHandler(auth));
 
 app.use(express.json());
 

@@ -1,6 +1,5 @@
 import { NextFunction, Request, Response } from "express";
 import { adminService } from "./admin.service";
-import { success } from "better-auth/*";
 
 
 const getUsers = async (req: Request, res: Response, next: NextFunction) => {

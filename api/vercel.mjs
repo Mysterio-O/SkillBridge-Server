@@ -6,9 +6,9 @@ var __export = (target, all) => {
 
 // src/app.ts
 import * as dotenv from "dotenv";
-import express6 from "express";
+import express8 from "express";
 import cors from "cors";
-import { toNodeHandler } from "better-auth/node";
+// removed better-auth usage in node build
 
 // src/lib/auth.ts
 import { betterAuth } from "better-auth";
@@ -267,6 +267,13 @@ var NullsOrder = {
 var defineExtension = runtime2.Extensions.defineExtension;
 
 // generated/prisma/enums.ts
+var BookingStatus = {
+  pending: "pending",
+  confirmed: "confirmed",
+  in_progress: "in_progress",
+  completed: "completed",
+  cancelled: "cancelled"
+};
 var TutorProfileStatus = {
   pending: "pending",
   active: "active",
@@ -302,24 +309,27 @@ var auth = betterAuth({
     provider: "postgresql"
     // or "mysql", "postgresql", ...etc
   }),
-  trustedOrigins: [
-    process.env.FRONTEND_URL,
-    "http://localhost:3000",
-    "https://skill-bridge-client.netlify.app"
-  ].filter(Boolean),
-  advanced: {
-    useSecureCookies: isProd,
-    defaultCookieAttributes: isProd ? {
-      sameSite: "none",
-      secure: true,
-      // partitioned: true,
-      path: "/"
-    } : {
-      sameSite: "lax",
-      secure: false,
-      path: "/"
-    }
-  },
+  trustedOrigins: ["https://skillbridge-ebon.vercel.app", "http://localhost:3000"],
+  // trustedOrigins: [
+  //   process.env.FRONTEND_URL,
+  //   "http://localhost:3000",
+  //   "https://skill-bridge-client.netlify.app"
+  // ].filter(Boolean) as string[],
+  // advanced: {
+  //   useSecureCookies: isProd,
+  //   defaultCookieAttributes: isProd
+  //     ? {
+  //       sameSite: "none",
+  //       secure: true,
+  //       // partitioned: true,
+  //       path:'/'
+  //     }
+  //     : {
+  //       sameSite: "lax",
+  //       secure: false,
+  //       path:'/'
+  //     },
+  // },
   user: {
     additionalFields: {
       role: { type: ["student", "tutor", "admin"], required: false, defaultValue: "student", input: false },
@@ -736,6 +746,7 @@ var getTutorById = async (id) => {
       },
       user: {
         select: {
+          name: true,
           tutorReviews: {
             where: {
               isHidden: false
@@ -865,6 +876,16 @@ var getPendingApplications = async (query) => {
     data: applications
   };
 };
+var getTutorProfileOwn = async (id) => {
+  console.log("service");
+  const result = await prisma.tutorProfile.findUnique({
+    where: {
+      userId: id
+    },
+    include: { subjects: true }
+  });
+  return result;
+};
 var tutorService = {
   addTutor,
   updateTutorApplication,
@@ -872,7 +893,8 @@ var tutorService = {
   getTutorById,
   updateTutorProfile,
   updateAvailability,
-  getPendingApplications
+  getPendingApplications,
+  getTutorProfileOwn
 };
 
 // src/middleware/auth.ts
@@ -908,6 +930,7 @@ var auth2 = (...roles) => {
         message: "forbidden access"
       });
     }
+    console.log("middleware", req.user);
     next();
   };
 };
@@ -1007,6 +1030,7 @@ var updateTutorProfile2 = async (req, res, next) => {
       tutor: result
     });
   } catch (e) {
+    console.log(e);
     next(e);
   }
 };
@@ -1030,6 +1054,7 @@ var updateAvailability2 = async (req, res, next) => {
       profile: result
     });
   } catch (e) {
+    console.log(e);
     next(e);
   }
 };
@@ -1045,6 +1070,23 @@ var getPendingApplications2 = async (req, res, next) => {
     next(e);
   }
 };
+var getTutorProfileOwn2 = async (req, res, next) => {
+  try {
+    const user = req.user;
+    if (!user) return res.status(401).json({
+      success: false,
+      message: "unauthorized"
+    });
+    const result = await tutorService.getTutorProfileOwn(user.id);
+    res.status(200).json({
+      success: true,
+      message: "Retrieved tutor profile",
+      data: result
+    });
+  } catch (e) {
+    next(e);
+  }
+};
 var tutorController = {
   addTutor: addTutor2,
   updateTutorApplication: updateTutorApplication2,
@@ -1052,17 +1094,19 @@ var tutorController = {
   getTutorById: getTutorById2,
   updateTutorProfile: updateTutorProfile2,
   updateAvailability: updateAvailability2,
-  getPendingApplications: getPendingApplications2
+  getPendingApplications: getPendingApplications2,
+  getTutorProfileOwn: getTutorProfileOwn2
 };
 
 // src/modules/tutors/tutors.route.ts
 var router = express.Router();
 router.get("/", tutorController.getTutors);
-router.get("/:id", tutorController.getTutorById);
 router.get("/applications/pending", auth_default("admin" /* ADMIN */), tutorController.getPendingApplications);
 router.post("/", tutorController.addTutor);
+router.get("/profile", auth_default("tutor" /* TUTOR */), tutorController.getTutorProfileOwn);
 router.put("/profile", auth_default("tutor" /* TUTOR */), tutorController.updateTutorProfile);
 router.put("/availability", auth_default("tutor" /* TUTOR */), tutorController.updateAvailability);
+router.get("/:id", tutorController.getTutorById);
 router.patch("/:id/update", auth_default("admin" /* ADMIN */), tutorController.updateTutorApplication);
 var tutorRouter = router;
 
@@ -1366,7 +1410,7 @@ var getBooking2 = async (req, res, next) => {
       message: "unauthorized access"
     });
     const result = await bookingService.getBooking(bookingId);
-    if (result.studentId !== user.id) return res.status(401).json({
+    if (result.studentId !== user.id || result.tutorProfileId !== user.id || user.role !== "admin") return res.status(401).json({
       success: false,
       message: "unauthorized access"
     });
@@ -1452,6 +1496,7 @@ var getCurrentUser2 = async (req, res, next) => {
       message: "unauthorized access"
     });
     const result = await authService.getCurrentUser(user.id);
+    console.log(result);
     res.status(200).json({
       success: true,
       user: result
@@ -1665,8 +1710,31 @@ var postReview = async ({ bookingId, rating, comment, studentId, tutorId }) => {
     throw e;
   }
 };
+var getReviews = async (id) => {
+  return prisma.review.findMany({
+    where: {
+      tutorId: id
+    },
+    include: {
+      student: {
+        select: {
+          name: true,
+          email: true
+        }
+      },
+      booking: {
+        select: {
+          id: true,
+          completedAt: true,
+          durationMinutes: true
+        }
+      }
+    }
+  });
+};
 var reviewsService = {
-  postReview
+  postReview,
+  getReviews
 };
 
 // src/modules/reviews/reviews.controller.ts
@@ -1693,18 +1761,603 @@ var postReview2 = async (req, res, next) => {
     next(e);
   }
 };
+var getReviews2 = async (req, res, next) => {
+  try {
+    const user = req.user;
+    if (!user) return res.status(401).json({
+      success: false,
+      message: "unauthorized"
+    });
+    const id = user.id;
+    const result = await reviewsService.getReviews(id);
+    res.status(200).json({
+      success: true,
+      message: "All reviews retrieved",
+      data: result
+    });
+  } catch (e) {
+    console.log(e);
+    next(e);
+  }
+};
 var reviewsController = {
-  postReview: postReview2
+  postReview: postReview2,
+  getReviews: getReviews2
 };
 
 // src/modules/reviews/reviews.route.ts
 var router6 = express5.Router();
 router6.post("/", auth_default("student" /* STUDENT */, "admin" /* ADMIN */), reviewsController.postReview);
+router6.get("/", auth_default("admin" /* ADMIN */, "student" /* STUDENT */, "tutor" /* TUTOR */), reviewsController.getReviews);
 var reviewsRouter = router6;
+
+// src/modules/dashboard/dashboard.route.ts
+import express6 from "express";
+
+// src/modules/dashboard/dashboard.actions.ts
+function clampRating(n) {
+  if (Number.isNaN(n)) return 0;
+  return Math.max(0, Math.min(5, n));
+}
+async function getAdminStats() {
+  const [
+    users,
+    students,
+    tutors,
+    tutorApplicationsPending,
+    tutorApplicationsActive,
+    categories,
+    reviewsTotal,
+    bookingsTotal,
+    bookingCountsByStatus,
+    recentBookings,
+    pendingTutorApplications
+  ] = await prisma.$transaction(async (tx) => {
+    const users2 = await tx.user.count();
+    const students2 = await tx.user.count({ where: { role: "student" } });
+    const tutors2 = await tx.user.count({ where: { role: "tutor" } });
+    const tutorApplicationsPending2 = await tx.tutorProfile.count({
+      where: { status: TutorProfileStatus.pending }
+    });
+    const tutorApplicationsActive2 = await tx.tutorProfile.count({
+      where: { status: TutorProfileStatus.active }
+    });
+    const categories2 = await tx.categories.count();
+    const reviewsTotal2 = await tx.review.count();
+    const bookingsTotal2 = await tx.booking.count();
+    const grouped = await tx.booking.groupBy({
+      by: ["status"],
+      _count: { status: true }
+    });
+    const recentBookings2 = await tx.booking.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 8,
+      select: {
+        id: true,
+        status: true,
+        startAt: true,
+        endAt: true,
+        currency: true,
+        totalPrice: true,
+        student: { select: { id: true, name: true, email: true } },
+        tutorProfile: {
+          select: {
+            id: true,
+            user: { select: { id: true, name: true, email: true } }
+          }
+        }
+      }
+    });
+    const pendingTutorApplications2 = await tx.tutorProfile.findMany({
+      where: { status: TutorProfileStatus.pending },
+      orderBy: { createdAt: "desc" },
+      take: 6,
+      select: {
+        id: true,
+        createdAt: true,
+        user: { select: { id: true, name: true, email: true, image: true } }
+      }
+    });
+    return [
+      users2,
+      students2,
+      tutors2,
+      tutorApplicationsPending2,
+      tutorApplicationsActive2,
+      categories2,
+      reviewsTotal2,
+      bookingsTotal2,
+      grouped,
+      recentBookings2,
+      pendingTutorApplications2
+    ];
+  });
+  const map = {
+    pending: 0,
+    confirmed: 0,
+    in_progress: 0,
+    completed: 0,
+    cancelled: 0
+  };
+  for (const row of bookingCountsByStatus) {
+    map[row.status] = row._count.status;
+  }
+  return {
+    role: "admin",
+    totals: {
+      users,
+      students,
+      tutors,
+      tutorApplicationsPending,
+      tutorApplicationsActive,
+      categories,
+      bookingsTotal,
+      reviewsTotal
+    },
+    bookings: {
+      pending: map.pending,
+      confirmed: map.confirmed,
+      in_progress: map.in_progress,
+      completed: map.completed,
+      cancelled: map.cancelled
+    },
+    recent: {
+      recentBookings,
+      pendingTutorApplications
+    }
+  };
+}
+async function getTutorStats(userId) {
+  const tutorProfile = await prisma.tutorProfile.findUnique({
+    where: { userId },
+    select: {
+      id: true,
+      status: true,
+      availability: true,
+      isActive: true,
+      isProfileComplete: true,
+      avgRating: true,
+      reviewCount: true,
+      hourlyRate: true,
+      currency: true
+    }
+  });
+  if (!tutorProfile) {
+    return {
+      role: "tutor",
+      profile: { exists: false },
+      bookings: {
+        total: 0,
+        pending: 0,
+        confirmed: 0,
+        in_progress: 0,
+        completed: 0,
+        cancelled: 0,
+        upcomingCount: 0
+      },
+      reviews: { total: 0, visible: 0, hidden: 0, avgRating: 0, latest: [] },
+      recentBookings: []
+    };
+  }
+  const tutorProfileId = tutorProfile.id;
+  const now = /* @__PURE__ */ new Date();
+  const [
+    bookingsTotal,
+    bookingGrouped,
+    upcomingCount,
+    reviewsTotal,
+    reviewsVisible,
+    reviewsHidden,
+    avgRatingAgg,
+    latestReviews,
+    recentBookings
+  ] = await prisma.$transaction(async (tx) => {
+    const bookingsTotal2 = await tx.booking.count({
+      where: { tutorProfileId }
+    });
+    const bookingGrouped2 = await tx.booking.groupBy({
+      by: ["status"],
+      where: { tutorProfileId },
+      _count: { status: true }
+    });
+    const upcomingCount2 = await tx.booking.count({
+      where: {
+        tutorProfileId,
+        startAt: { gt: now },
+        status: { in: [BookingStatus.pending, BookingStatus.confirmed] }
+      }
+    });
+    const reviewsTotal2 = await tx.review.count({
+      where: { tutorId: userId }
+    });
+    const reviewsVisible2 = await tx.review.count({
+      where: { tutorId: userId, isHidden: false }
+    });
+    const reviewsHidden2 = await tx.review.count({
+      where: { tutorId: userId, isHidden: true }
+    });
+    const avgRatingAgg2 = await tx.review.aggregate({
+      where: { tutorId: userId, isHidden: false },
+      _avg: { rating: true }
+    });
+    const latestReviews2 = await tx.review.findMany({
+      where: { tutorId: userId },
+      orderBy: { createdAt: "desc" },
+      take: 6,
+      select: {
+        id: true,
+        rating: true,
+        comment: true,
+        isHidden: true,
+        createdAt: true,
+        student: { select: { id: true, name: true, email: true } },
+        booking: { select: { id: true, completedAt: true, durationMinutes: true } }
+      }
+    });
+    const recentBookings2 = await tx.booking.findMany({
+      where: { tutorProfileId },
+      orderBy: { createdAt: "desc" },
+      take: 8,
+      select: {
+        id: true,
+        status: true,
+        startAt: true,
+        endAt: true,
+        durationMinutes: true,
+        currency: true,
+        totalPrice: true,
+        student: { select: { id: true, name: true, email: true, image: true } }
+      }
+    });
+    return [
+      bookingsTotal2,
+      bookingGrouped2,
+      upcomingCount2,
+      reviewsTotal2,
+      reviewsVisible2,
+      reviewsHidden2,
+      avgRatingAgg2,
+      latestReviews2,
+      recentBookings2
+    ];
+  });
+  const map = {
+    pending: 0,
+    confirmed: 0,
+    in_progress: 0,
+    completed: 0,
+    cancelled: 0
+  };
+  for (const row of bookingGrouped) {
+    map[row.status] = row._count.status;
+  }
+  const avgRating = avgRatingAgg._avg.rating == null ? 0 : clampRating(Number(avgRatingAgg._avg.rating));
+  return {
+    role: "tutor",
+    profile: {
+      exists: true,
+      status: tutorProfile.status,
+      availability: tutorProfile.availability,
+      isActive: tutorProfile.isActive,
+      isProfileComplete: tutorProfile.isProfileComplete,
+      avgRating: tutorProfile.avgRating,
+      reviewCount: tutorProfile.reviewCount,
+      hourlyRate: tutorProfile.hourlyRate,
+      currency: tutorProfile.currency
+    },
+    bookings: {
+      total: bookingsTotal,
+      pending: map.pending,
+      confirmed: map.confirmed,
+      in_progress: map.in_progress,
+      completed: map.completed,
+      cancelled: map.cancelled,
+      upcomingCount
+    },
+    reviews: {
+      total: reviewsTotal,
+      visible: reviewsVisible,
+      hidden: reviewsHidden,
+      avgRating,
+      latest: latestReviews
+    },
+    recentBookings
+  };
+}
+async function getStudentStats(userId) {
+  const now = /* @__PURE__ */ new Date();
+  const [
+    bookingsTotal,
+    bookingGrouped,
+    upcomingCount,
+    reviewsTotal,
+    avgRatingAgg,
+    latestReviews,
+    recentBookings
+  ] = await prisma.$transaction(async (tx) => {
+    const bookingsTotal2 = await tx.booking.count({
+      where: { studentId: userId }
+    });
+    const bookingGrouped2 = await tx.booking.groupBy({
+      by: ["status"],
+      where: { studentId: userId },
+      _count: { status: true }
+    });
+    const upcomingCount2 = await tx.booking.count({
+      where: {
+        studentId: userId,
+        startAt: { gt: now },
+        status: { in: [BookingStatus.pending, BookingStatus.confirmed] }
+      }
+    });
+    const reviewsTotal2 = await tx.review.count({
+      where: { studentId: userId }
+    });
+    const avgRatingAgg2 = await tx.review.aggregate({
+      where: { studentId: userId },
+      _avg: { rating: true }
+    });
+    const latestReviews2 = await tx.review.findMany({
+      where: { studentId: userId },
+      orderBy: { createdAt: "desc" },
+      take: 6,
+      select: {
+        id: true,
+        rating: true,
+        comment: true,
+        createdAt: true,
+        tutor: { select: { id: true, name: true, email: true } },
+        booking: { select: { id: true, completedAt: true, durationMinutes: true } }
+      }
+    });
+    const recentBookings2 = await tx.booking.findMany({
+      where: { studentId: userId },
+      orderBy: { createdAt: "desc" },
+      take: 8,
+      select: {
+        id: true,
+        status: true,
+        startAt: true,
+        endAt: true,
+        durationMinutes: true,
+        currency: true,
+        totalPrice: true,
+        tutorProfile: {
+          select: {
+            id: true,
+            user: { select: { id: true, name: true, email: true, image: true } }
+          }
+        }
+      }
+    });
+    return [
+      bookingsTotal2,
+      bookingGrouped2,
+      upcomingCount2,
+      reviewsTotal2,
+      avgRatingAgg2,
+      latestReviews2,
+      recentBookings2
+    ];
+  });
+  const map = {
+    pending: 0,
+    confirmed: 0,
+    in_progress: 0,
+    completed: 0,
+    cancelled: 0
+  };
+  for (const row of bookingGrouped) {
+    map[row.status] = row._count.status;
+  }
+  const avgRatingGiven = avgRatingAgg._avg.rating == null ? 0 : clampRating(Number(avgRatingAgg._avg.rating));
+  return {
+    role: "student",
+    bookings: {
+      total: bookingsTotal,
+      pending: map.pending,
+      confirmed: map.confirmed,
+      in_progress: map.in_progress,
+      completed: map.completed,
+      cancelled: map.cancelled,
+      upcomingCount
+    },
+    reviews: {
+      total: reviewsTotal,
+      avgRatingGiven,
+      latest: latestReviews
+    },
+    recentBookings
+  };
+}
+
+// src/modules/dashboard/dashboard.service.ts
+var getDashboardStats = async (userId, role) => {
+  if (role === "admin" /* ADMIN */) return getAdminStats();
+  if (role === "tutor" /* TUTOR */) return getTutorStats(userId);
+  return getStudentStats(userId);
+};
+var dashboardService = {
+  getDashboardStats
+};
+
+// src/modules/dashboard/dashboard.controller.ts
+var getDashboardStats2 = async (req, res, next) => {
+  try {
+    const user = req.user;
+    if (!user) {
+      return res.status(401).json({ success: false, message: "unauthorized" });
+    }
+    const id = user.id;
+    const role = user.role;
+    const data = await dashboardService.getDashboardStats(id, role);
+    return res.status(200).json({
+      success: true,
+      message: "dashboard stats",
+      data
+    });
+  } catch (e) {
+    next(e);
+  }
+};
+var dashboardController = { getDashboardStats: getDashboardStats2 };
+
+// src/modules/dashboard/dashboard.route.ts
+var router7 = express6.Router();
+router7.get("/", auth_default("admin" /* ADMIN */, "student" /* STUDENT */, "tutor" /* TUTOR */), dashboardController.getDashboardStats);
+var dashboardRouter = router7;
+
+// src/modules/users/users.route.ts
+import express7 from "express";
+
+// src/modules/users/users.helper.ts
+function isPlainObject(v) {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+function cleanString(v) {
+  if (typeof v !== "string") return void 0;
+  const s = v.trim();
+  return s.length ? s : void 0;
+}
+function cleanNullableString(v) {
+  if (v === null) return null;
+  if (typeof v !== "string") return void 0;
+  const s = v.trim();
+  return s.length ? s : null;
+}
+function validateAndBuildUpdate(body) {
+  if (!isPlainObject(body)) {
+    const err = new Error("Invalid request body.");
+    err.statusCode = 400;
+    throw err;
+  }
+  const data = {};
+  if ("name" in body) {
+    const name = cleanString(body.name);
+    if (!name) {
+      const err = new Error("`name` must be a non-empty string.");
+      err.statusCode = 400;
+      throw err;
+    }
+    if (name.length > 120) {
+      const err = new Error("`name` is too long (max 120).");
+      err.statusCode = 400;
+      throw err;
+    }
+    data.name = name;
+  }
+  if ("phone" in body) {
+    const phone = cleanNullableString(body.phone);
+    if (phone !== void 0 && phone !== null && phone.length > 30) {
+      const err = new Error("`phone` is too long (max 30).");
+      err.statusCode = 400;
+      throw err;
+    }
+    if (phone !== void 0) data.phone = phone;
+  }
+  if ("bio" in body) {
+    const bio = cleanNullableString(body.bio);
+    if (bio !== void 0 && bio !== null && bio.length > 1e3) {
+      const err = new Error("`bio` is too long (max 1000).");
+      err.statusCode = 400;
+      throw err;
+    }
+    if (bio !== void 0) data.bio = bio;
+  }
+  if ("image" in body) {
+    const image = cleanNullableString(body.image);
+    if (image !== void 0 && image !== null && image.length > 2048) {
+      const err = new Error("`image` is too long (max 2048).");
+      err.statusCode = 400;
+      throw err;
+    }
+    if (image !== void 0) data.image = image;
+  }
+  if (Object.keys(data).length === 0) {
+    const err = new Error("No valid fields provided to update.");
+    err.statusCode = 400;
+    throw err;
+  }
+  return data;
+}
+
+// src/modules/users/users.service.ts
+var updateProfile = async (userId, body) => {
+  const existing = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, status: true, bannedAt: true }
+  });
+  if (!existing) {
+    const err = new Error("User not found.");
+    err.statusCode = 404;
+    throw err;
+  }
+  if (existing.bannedAt || existing.status === "banned") {
+    const err = new Error("Your account is banned. You cannot update your profile.");
+    err.statusCode = 403;
+    throw err;
+  }
+  ;
+  const data = validateAndBuildUpdate(body);
+  const updated = await prisma.user.update({
+    where: { id: userId },
+    data,
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      emailVerified: true,
+      image: true,
+      role: true,
+      phone: true,
+      status: true,
+      bio: true,
+      lastLoginAt: true,
+      createdAt: true,
+      updatedAt: true,
+      bannedAt: true,
+      banReason: true
+    }
+  });
+  return updated;
+};
+var userService = {
+  updateProfile
+};
+
+// src/modules/users/users.controller.ts
+var updateProfile2 = async (req, res, next) => {
+  try {
+    const authUser = req.user;
+    const userId = authUser?.id;
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized."
+      });
+    }
+    const updated = await userService.updateProfile(userId, req.body);
+    return res.status(200).json({
+      success: true,
+      message: "Profile updated successfully.",
+      data: updated
+    });
+  } catch (e) {
+    next(e);
+  }
+};
+var userController = {
+  updateProfile: updateProfile2
+};
+
+// src/modules/users/users.route.ts
+var router8 = express7.Router();
+router8.patch("/profile", auth_default("admin" /* ADMIN */, "tutor" /* TUTOR */, "student" /* STUDENT */), userController.updateProfile);
+var userRouter = router8;
 
 // src/app.ts
 dotenv.config();
-var app = express6();
+var app = express8();
 app.set("trust proxy", 1);
 var allowedOrigins = [
   process.env.FRONTEND_URL,
@@ -1719,8 +2372,8 @@ app.use(
     // allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
-app.all("/api/auth/*any", toNodeHandler(auth));
-app.use(express6.json());
+// auth route handling replaced by custom auth in source files
+app.use(express8.json());
 app.get("/", async (req, res) => {
   res.send("Hello World");
 });
@@ -1730,6 +2383,8 @@ app.use("/api/tutor", tutorRouter);
 app.use("/api/categories", categoriesRouter);
 app.use("/api/bookings", bookingRouter);
 app.use("/api/review", reviewsRouter);
+app.use("/api/dashboard", dashboardRouter);
+app.use("/api/users", userRouter);
 app.use(globalErrorHandler_default);
 app.use(notFound);
 var app_default = app;

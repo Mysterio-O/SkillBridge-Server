@@ -1,7 +1,6 @@
 import { NextFunction, Request, Response } from "express";
 import { tutorService } from "./tutors.service";
 import { UserRole } from "../../middleware/auth";
-import { success } from "better-auth/*";
 
 
 const addTutor = async (req: Request, res: Response, next: NextFunction) => {
