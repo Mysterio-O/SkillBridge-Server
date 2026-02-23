@@ -8,15 +8,6 @@ var __export = (target, all) => {
 import * as dotenv from "dotenv";
 import express8 from "express";
 import cors from "cors";
-// removed better-auth usage in node build
-
-// src/lib/auth.ts
-import { betterAuth } from "better-auth";
-import { prismaAdapter } from "better-auth/adapters/prisma";
-
-// src/lib/prisma.ts
-import "dotenv/config";
-import { PrismaPg } from "@prisma/adapter-pg";
 
 // generated/prisma/client.ts
 import * as path from "path";
@@ -284,193 +275,6 @@ var TutorProfileStatus = {
 globalThis["__dirname"] = path.dirname(fileURLToPath(import.meta.url));
 var PrismaClient = getPrismaClientClass();
 
-// src/lib/prisma.ts
-var connectionString = `${process.env.DATABASE_URL}`;
-var adapter = new PrismaPg({ connectionString });
-var prisma = new PrismaClient({ adapter });
-
-// src/lib/auth.ts
-import nodemailer from "nodemailer";
-var transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false,
-  // use STARTTLS (upgrade connection to TLS after connecting)
-  auth: {
-    user: process.env.APP_USER,
-    pass: process.env.APP_PASSWORD
-  }
-});
-var isProd = process.env.NODE_ENV === "production";
-var auth = betterAuth({
-  baseURL: process.env.BETTER_AUTH_URL,
-  secret: process.env.BETTER_AUTH_SECRET,
-  database: prismaAdapter(prisma, {
-    provider: "postgresql"
-    // or "mysql", "postgresql", ...etc
-  }),
-  trustedOrigins: ["https://skillbridge-ebon.vercel.app", "http://localhost:3000"],
-  // trustedOrigins: [
-  //   process.env.FRONTEND_URL,
-  //   "http://localhost:3000",
-  //   "https://skill-bridge-client.netlify.app"
-  // ].filter(Boolean) as string[],
-  // advanced: {
-  //   useSecureCookies: isProd,
-  //   defaultCookieAttributes: isProd
-  //     ? {
-  //       sameSite: "none",
-  //       secure: true,
-  //       // partitioned: true,
-  //       path:'/'
-  //     }
-  //     : {
-  //       sameSite: "lax",
-  //       secure: false,
-  //       path:'/'
-  //     },
-  // },
-  user: {
-    additionalFields: {
-      role: { type: ["student", "tutor", "admin"], required: false, defaultValue: "student", input: false },
-      phone: { type: "string", required: false },
-      status: { type: ["active", "banned", "inactive"], required: false, defaultValue: "active", input: false },
-      bio: { type: "string", required: false },
-      lastLoginAt: { type: "date", required: false, input: false },
-      bannedAt: { type: "date", required: false, input: false },
-      banReason: { type: "string", required: false, input: false }
-    }
-  },
-  emailAndPassword: {
-    enabled: true,
-    autoSignIn: false,
-    requireEmailVerification: true
-  },
-  emailVerification: {
-    sendOnSignUp: true,
-    autoSignInAfterVerification: true,
-    sendVerificationEmail: async ({ user, url, token }, request) => {
-      const verificationUrl = `${process.env.APP_URL}/verify-email?token=${token}`;
-      try {
-        const info = await transporter.sendMail({
-          from: `"Skill Bridge" <${process.env.APP_USER}>`,
-          // sender address
-          to: user.email,
-          // list of recipients
-          subject: "Verify Your Skill Bridge Account",
-          // subject line
-          text: "Verification Email",
-          // plain text body
-          html: `
-                    <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Verify your email</title>
-</head>
-<body style="margin:0;padding:0;background-color:#f3f4f6;font-family:Arial,Helvetica,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f3f4f6;padding:24px;">
-    <tr>
-      <td align="center">
-        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:10px;overflow:hidden;">
-          
-          <!-- Header -->
-          <tr>
-            <td style="background:#111827;padding:20px;text-align:center;">
-              <h1 style="margin:0;color:#ffffff;font-size:20px;">
-                Skill Bridge
-              </h1>
-            </td>
-          </tr>
-
-          <!-- Content -->
-          <tr>
-            <td style="padding:28px;color:#374151;">
-              <h2 style="margin-top:0;font-size:18px;color:#111827;">
-                Verify your email address
-              </h2>
-
-              <p style="font-size:14px;line-height:1.6;">
-                Hi ${user.name ? user.name : "there"},
-              </p>
-
-              <p style="font-size:14px;line-height:1.6;">
-                Thanks for signing up! Please confirm your email address by clicking the button below.
-              </p>
-
-              <!-- Button -->
-              <table cellpadding="0" cellspacing="0" style="margin:24px 0;">
-                <tr>
-                  <td>
-                    <a href="${verificationUrl}"
-                      style="
-                        background:#2563eb;
-                        color:#ffffff;
-                        padding:12px 20px;
-                        text-decoration:none;
-                        border-radius:6px;
-                        font-size:14px;
-                        display:inline-block;
-                      "
-                    >
-                      Verify Email
-                    </a>
-                  </td>
-                </tr>
-              </table>
-
-              <p style="font-size:13px;color:#6b7280;line-height:1.6;">
-                If the button doesn't work, copy and paste this link into your browser:
-              </p>
-
-              <p style="font-size:12px;word-break:break-all;color:#2563eb;">
-                ${verificationUrl}
-              </p>
-
-              <p style="font-size:13px;color:#6b7280;line-height:1.6;margin-top:24px;">
-                If you didn\u2019t create an account, you can safely ignore this email.
-              </p>
-
-              <p style="font-size:13px;color:#6b7280;">
-                \u2014 Skill Bridge Team
-              </p>
-            </td>
-          </tr>
-
-          <!-- Footer -->
-          <tr>
-            <td style="background:#f9fafb;padding:16px;text-align:center;font-size:12px;color:#9ca3af;">
-              \xA9 ${(/* @__PURE__ */ new Date()).getFullYear()} Skill Bridge. All rights reserved.
-            </td>
-          </tr>
-
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
-
-                    `
-        });
-        console.log("Message sent: %s", info.messageId);
-        console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
-      } catch (err) {
-        console.error("Error while sending mail", err);
-      }
-    }
-  },
-  socialProviders: {
-    google: {
-      prompt: "select_account consent",
-      accessType: "offline",
-      clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET
-    }
-  }
-});
-
 // src/middleware/globalErrorHandler.ts
 function prismaSafeDetails(err) {
   return {
@@ -481,11 +285,30 @@ function prismaSafeDetails(err) {
   };
 }
 function errorHandler(err, req, res, next) {
+  console.error(err);
   if (res.headersSent) return next(err);
   let statusCode = 500;
   let errMessage = "Internal server error";
   const isDev = process.env.NODE_ENV !== "production";
   const errDetails = isDev ? prismaSafeDetails(err) : void 0;
+  if (err?.message && typeof err.message === "string") {
+    const m = err.message;
+    if (m.includes("User already exists")) {
+      statusCode = 409;
+      errMessage = "User already exists.";
+      return res.status(statusCode).json({ success: false, message: errMessage });
+    }
+    if (m.includes("Invalid credentials")) {
+      statusCode = 401;
+      errMessage = "Invalid credentials.";
+      return res.status(statusCode).json({ success: false, message: errMessage });
+    }
+    if (m.includes("JWT secret not configured")) {
+      statusCode = 500;
+      errMessage = "Server authentication is not configured.";
+      return res.status(statusCode).json({ success: false, message: errMessage });
+    }
+  }
   if (err instanceof prismaNamespace_exports.PrismaClientValidationError) {
     statusCode = 400;
     errMessage = "You provided incorrect field(s).";
@@ -555,6 +378,13 @@ function notFound(req, res) {
 
 // src/modules/tutors/tutors.route.ts
 import express from "express";
+
+// src/lib/prisma.ts
+import "dotenv/config";
+import { PrismaPg } from "@prisma/adapter-pg";
+var connectionString = `${process.env.DATABASE_URL}`;
+var adapter = new PrismaPg({ connectionString });
+var prisma = new PrismaClient({ adapter });
 
 // src/modules/tutors/tutors.service.ts
 var uniq = (arr) => Array.from(new Set(arr.map((x) => x.trim()).filter(Boolean)));
@@ -898,43 +728,74 @@ var tutorService = {
 };
 
 // src/middleware/auth.ts
-var auth2 = (...roles) => {
+import jwt from "jsonwebtoken";
+var auth = (...roles) => {
   return async (req, res, next) => {
-    const session = await auth.api.getSession({
-      headers: req.headers
-    });
-    if (!session) {
-      return res.status(401).json({
-        success: false,
-        message: "unauthorized access"
+    try {
+      const authHeader = req.headers.authorization || req.headers.Authorization;
+      console.log(`[AUTH] ${req.method} ${req.path} - Authorization header: ${authHeader ? "present" : "MISSING"}`);
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        console.log("[AUTH] No Bearer token in header");
+        return res.status(401).json({ success: false, message: "unauthorized access" });
+      }
+      const token = authHeader.split(" ")[1];
+      console.log(`[AUTH] Token length: ${token.length}`);
+      const secret = process.env.JWT_SECRET || process.env.BETTER_AUTH_SECRET;
+      if (!secret) {
+        console.error("[AUTH] JWT secret not configured");
+        return res.status(401).json({ success: false, message: "unauthorized" });
+      }
+      let decoded;
+      try {
+        decoded = jwt.verify(token, secret);
+        console.log(`[AUTH] JWT verified. UserId: ${decoded.userId}`);
+      } catch (err) {
+        const errMsg = err instanceof jwt.TokenExpiredError ? "token expired" : "invalid token";
+        console.log(`[AUTH] JWT verification failed: ${errMsg}`);
+        return res.status(401).json({ success: false, message: "invalid or expired token" });
+      }
+      if (!decoded.userId) {
+        console.log("[AUTH] Invalid token payload - missing userId");
+        return res.status(401).json({ success: false, message: "invalid token payload" });
+      }
+      const session = await prisma.session.findUnique({
+        where: { token },
+        include: { user: true }
       });
+      if (!session) {
+        console.log(`[AUTH] Session not found in DB for token`);
+        return res.status(401).json({ success: false, message: "invalid session" });
+      }
+      console.log(`[AUTH] Session found. User: ${session.user?.email}`);
+      if (new Date(session.expiresAt) < /* @__PURE__ */ new Date()) {
+        console.log("[AUTH] Session expired");
+        return res.status(401).json({ success: false, message: "session expired" });
+      }
+      const user = session.user;
+      if (!user) {
+        console.log("[AUTH] No user in session");
+        return res.status(401).json({ success: false, message: "unauthorized access" });
+      }
+      req.user = {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role || "student",
+        emailVerified: user.emailVerified
+      };
+      if (roles.length && !roles.includes(req.user.role)) {
+        console.log(`[AUTH] Forbidden - user role '${req.user.role}' not in allowed roles`);
+        return res.status(403).json({ success: false, message: "forbidden access" });
+      }
+      console.log(`[AUTH] \u2713 Authenticated as ${user.email} (${user.role})`);
+      next();
+    } catch (err) {
+      console.error("[AUTH] Unexpected error:", err);
+      return res.status(401).json({ success: false, message: "unauthorized" });
     }
-    ;
-    if (!session.user.emailVerified) {
-      return res.status(403).json({
-        success: false,
-        message: "email verification required"
-      });
-    }
-    req.user = {
-      id: session.user.id,
-      email: session.user.email,
-      name: session.user.name,
-      role: session.user.role,
-      emailVerified: session.user.emailVerified
-    };
-    console.log(req.user);
-    if (roles.length && !roles.includes(req.user.role)) {
-      return res.status(403).json({
-        success: false,
-        message: "forbidden access"
-      });
-    }
-    console.log("middleware", req.user);
-    next();
   };
 };
-var auth_default = auth2;
+var auth_default = auth;
 
 // src/modules/tutors/tutors.controller.ts
 var addTutor2 = async (req, res, next) => {
@@ -1474,16 +1335,154 @@ var bookingRouter = router3;
 import express3 from "express";
 
 // src/modules/auth/auth.service.ts
+import bcrypt from "bcryptjs";
+import jwt2 from "jsonwebtoken";
+import { randomUUID } from "crypto";
+
+// src/lib/auth.ts
+import nodemailer from "nodemailer";
+var transporter = nodemailer.createTransport({
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: false,
+  auth: {
+    user: process.env.APP_USER,
+    pass: process.env.APP_PASSWORD
+  }
+});
+var verificationHtml = (user, verificationUrl) => `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Verify your email</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f3f4f6;font-family:Arial,Helvetica,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f3f4f6;padding:24px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:10px;overflow:hidden;">
+          <tr>
+            <td style="background:#111827;padding:20px;text-align:center;">
+              <h1 style="margin:0;color:#ffffff;font-size:20px;">Skill Bridge</h1>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:28px;color:#374151;">
+              <h2 style="margin-top:0;font-size:18px;color:#111827;">Verify your email address</h2>
+              <p style="font-size:14px;line-height:1.6;">Hi ${user.name ? user.name : "there"},</p>
+              <p style="font-size:14px;line-height:1.6;">Thanks for signing up! Please confirm your email address by clicking the button below.</p>
+              <table cellpadding="0" cellspacing="0" style="margin:24px 0;"><tr><td><a href="${verificationUrl}" style="background:#2563eb;color:#ffffff;padding:12px 20px;text-decoration:none;border-radius:6px;font-size:14px;display:inline-block;">Verify Email</a></td></tr></table>
+              <p style="font-size:13px;color:#6b7280;line-height:1.6;">If the button doesn't work, copy and paste this link into your browser:</p>
+              <p style="font-size:12px;word-break:break-all;color:#2563eb;">${verificationUrl}</p>
+              <p style="font-size:13px;color:#6b7280;line-height:1.6;margin-top:24px;">If you didn\u2019t create an account, you can safely ignore this email.</p>
+              <p style="font-size:13px;color:#6b7280;">\u2014 Skill Bridge Team</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="background:#f9fafb;padding:16px;text-align:center;font-size:12px;color:#9ca3af;">\xA9 ${(/* @__PURE__ */ new Date()).getFullYear()} Skill Bridge. All rights reserved.</td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+var sendVerificationEmail = async (user, token) => {
+  const verificationUrl = `${process.env.APP_URL}/api/authentication/verify?token=${token}`;
+  try {
+    const info = await transporter.sendMail({
+      from: `"Skill Bridge" <${process.env.APP_USER}>`,
+      to: user.email,
+      subject: "Verify Your Skill Bridge Account",
+      text: "Verification Email",
+      html: verificationHtml(user, verificationUrl)
+    });
+    console.log("Verification mail sent: %s", info.messageId);
+  } catch (err) {
+    console.error("Error while sending verification mail", err);
+  }
+};
+
+// src/modules/auth/auth.service.ts
 var getCurrentUser = async (id) => {
   const user = await prisma.user.findUniqueOrThrow({
-    where: {
-      id
-    }
+    where: { id }
   });
   return user;
 };
+var register = async (payload) => {
+  const { name, email, password, role } = payload;
+  const existing = await prisma.user.findUnique({ where: { email } });
+  if (existing) throw new Error("User already exists");
+  const userId = randomUUID();
+  const user = await prisma.user.create({
+    data: {
+      id: userId,
+      name,
+      email,
+      role: role || "student",
+      emailVerified: false
+    }
+  });
+  const hashed = await bcrypt.hash(password, 10);
+  await prisma.account.create({
+    data: {
+      id: randomUUID(),
+      accountId: userId,
+      providerId: "email",
+      userId,
+      password: hashed
+    }
+  });
+  const token = randomUUID();
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1e3);
+  await prisma.verification.create({
+    data: {
+      id: randomUUID(),
+      identifier: email,
+      value: token,
+      expiresAt
+    }
+  });
+  sendVerificationEmail(user, token).catch((e) => console.error(e));
+  return user;
+};
+var login = async (payload) => {
+  const { email, password } = payload;
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user) throw new Error("Invalid credentials");
+  const account = await prisma.account.findFirst({ where: { userId: user.id, providerId: "email" } });
+  if (!account || !account.password) throw new Error("Invalid credentials");
+  const ok = await bcrypt.compare(password, account.password);
+  if (!ok) throw new Error("Invalid credentials");
+  const secret = process.env.JWT_SECRET || process.env.BETTER_AUTH_SECRET;
+  if (!secret) throw new Error("JWT secret not configured");
+  const token = jwt2.sign({ userId: user.id }, secret, { expiresIn: "7d" });
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1e3);
+  await prisma.session.create({
+    data: {
+      id: randomUUID(),
+      expiresAt,
+      token,
+      userId: user.id
+    }
+  });
+  return { token, user };
+};
+var verifyEmail = async (token) => {
+  const record = await prisma.verification.findFirst({ where: { value: token } });
+  if (!record) throw new Error("Invalid token");
+  if (new Date(record.expiresAt) < /* @__PURE__ */ new Date()) throw new Error("Token expired");
+  await prisma.user.update({ where: { email: record.identifier }, data: { emailVerified: true } });
+  await prisma.verification.deleteMany({ where: { identifier: record.identifier } });
+  return true;
+};
 var authService = {
-  getCurrentUser
+  getCurrentUser,
+  register,
+  login,
+  verifyEmail
 };
 
 // src/modules/auth/auth.controller.ts
@@ -1505,12 +1504,48 @@ var getCurrentUser2 = async (req, res, next) => {
     next(e);
   }
 };
+var register2 = async (req, res, next) => {
+  try {
+    const { name, email, password, role } = req.body;
+    if (!email || !password) return res.status(400).json({ success: false, message: "email and password required" });
+    const user = await authService.register({ name, email, password, role });
+    res.status(201).json({ success: true, message: "user registered", user });
+  } catch (e) {
+    next(e);
+  }
+};
+var login2 = async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) return res.status(400).json({ success: false, message: "email and password required" });
+    const result = await authService.login({ email, password });
+    res.status(200).json({ success: true, message: "logged in", data: result });
+  } catch (e) {
+    next(e);
+  }
+};
+var verify = async (req, res, next) => {
+  try {
+    const { token } = req.query;
+    if (!token) return res.status(400).json({ success: false, message: "token missing" });
+    await authService.verifyEmail(token);
+    res.status(200).json({ success: true, message: "email verified" });
+  } catch (e) {
+    next(e);
+  }
+};
 var authController = {
-  getCurrentUser: getCurrentUser2
+  getCurrentUser: getCurrentUser2,
+  register: register2,
+  login: login2,
+  verify
 };
 
 // src/modules/auth/auth.route.ts
 var router4 = express3.Router();
+router4.post("/register", authController.register);
+router4.post("/login", authController.login);
+router4.get("/verify", authController.verify);
 router4.get("/me", auth_default("admin" /* ADMIN */, "tutor" /* TUTOR */, "student" /* STUDENT */), authController.getCurrentUser);
 var authRouter = router4;
 
@@ -2357,6 +2392,7 @@ var userRouter = router8;
 
 // src/app.ts
 dotenv.config();
+console.log("JWT secret present:", Boolean(process.env.JWT_SECRET || process.env.BETTER_AUTH_SECRET));
 var app = express8();
 app.set("trust proxy", 1);
 var allowedOrigins = [
@@ -2372,7 +2408,6 @@ app.use(
     // allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
-// auth route handling replaced by custom auth in source files
 app.use(express8.json());
 app.get("/", async (req, res) => {
   res.send("Hello World");

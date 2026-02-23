@@ -18,6 +18,9 @@ function errorHandler(
     res: Response,
     next: NextFunction
 ) {
+    // Always log the full error to server logs so production issues are visible
+    // (Vercel / serverless platforms expose stdout/stderr to the function logs)
+    console.error(err);
     // If response already started, delegate to default handler
     if (res.headersSent) return next(err);
 
@@ -27,6 +30,26 @@ function errorHandler(
     // show more details in dev, less in prod
     const isDev = process.env.NODE_ENV !== "production";
     const errDetails = isDev ? prismaSafeDetails(err) : undefined;
+
+    // Map common application-level Error messages to HTTP statuses
+    if (err?.message && typeof err.message === "string") {
+        const m = err.message;
+        if (m.includes("User already exists")) {
+            statusCode = 409;
+            errMessage = "User already exists.";
+            return res.status(statusCode).json({ success: false, message: errMessage });
+        }
+        if (m.includes("Invalid credentials")) {
+            statusCode = 401;
+            errMessage = "Invalid credentials.";
+            return res.status(statusCode).json({ success: false, message: errMessage });
+        }
+        if (m.includes("JWT secret not configured")) {
+            statusCode = 500;
+            errMessage = "Server authentication is not configured.";
+            return res.status(statusCode).json({ success: false, message: errMessage });
+        }
+    }
 
     // Prisma validation (bad query shape)
     if (err instanceof Prisma.PrismaClientValidationError) {

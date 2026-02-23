@@ -25,7 +25,7 @@ const register = async (payload: { name: string; email: string; password: string
             name,
             email,
             role: role || "student",
-            emailVerified: false,
+            emailVerified: true,
         },
     });
 
